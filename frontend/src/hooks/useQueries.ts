@@ -1,11 +1,12 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/api'
 import type { 
   Building, 
   Report, ReportFilters,
   Task, TaskFilters,
   User,
-  PaginatedResponse 
+  PaginatedResponse,
+  TaskUpdate
 } from '../types'
 
 // Query keys
@@ -30,8 +31,6 @@ export function useBuildings() {
 
 // Reports hook with optional filters
 export function useReports(filters?: ReportFilters) {
-  const queryClient = useQueryClient()
-  
   return useQuery<PaginatedResponse<Report>>({
     queryKey: queryKeys.reports(filters),
     queryFn: async () => {
@@ -99,6 +98,48 @@ export function useDashboardStats() {
         active_tasks: 0,
         total_users: 0,
       }
+    },
+  })
+}
+
+// Employee-specific task hooks
+export function useMyAssignedTasks() {
+  return useQuery<PaginatedResponse<Task>>({
+    queryKey: ['tasks', 'my-assigned'],
+    queryFn: async () => {
+      const response = await api.get<PaginatedResponse<Task>>('/tasks?assignee_id=me')
+      return response
+    },
+  })
+}
+
+export function useUpdateTaskStatus() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
+      const response = await api.patch<Task>(`/tasks/${taskId}/status`, { status })
+      return response
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+}
+
+export function useAddTaskUpdate() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ taskId, content, isConcern }: { taskId: string; content: string; isConcern: boolean }) => {
+      const response = await api.post<TaskUpdate>(`/tasks/${taskId}/updates`, {
+        content,
+        is_concern: isConcern,
+      })
+      return response
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId, 'updates'] })
     },
   })
 }

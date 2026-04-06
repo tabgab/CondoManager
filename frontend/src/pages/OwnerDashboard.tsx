@@ -2,14 +2,23 @@ import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
 import { Navbar } from '../components/Navbar';
 import { ReportForm } from '../components/reports/ReportForm';
-import { useMyReports } from '../hooks/useReports';
+import { ReportDetailModal } from '../components/reports/ReportDetailModal';
+import { useMyReports, useReportDetail, useReportMessages, useAddMessage, useDeleteReport } from '../hooks/useReports';
 import { useBuildings } from '../hooks/useQueries';
+import type { Report } from '../types';
 
 export function OwnerDashboard() {
   const { user, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'reports' | 'submit'>('reports');
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  
   const { data: reports = [], isLoading: reportsLoading, refetch } = useMyReports();
   const { data: buildings = [], isLoading: buildingsLoading } = useBuildings();
+  const { data: reportDetail } = useReportDetail(selectedReportId);
+  const { data: reportMessages = [] } = useReportMessages(selectedReportId);
+  const { mutateAsync: addMessage } = useAddMessage();
+  const { mutateAsync: deleteReport } = useDeleteReport();
 
   const pendingCount = reports.filter(r => r.status === 'pending').length;
   const resolvedCount = reports.filter(r => r.status === 'resolved' || r.status === 'rejected').length;
@@ -20,6 +29,45 @@ export function OwnerDashboard() {
   const handleReportSuccess = () => {
     setActiveTab('reports');
     refetch();
+  };
+
+  const handleReportClick = (report: Report) => {
+    setSelectedReport(report);
+    setSelectedReportId(report.id);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedReportId(null);
+    setSelectedReport(null);
+  };
+
+  const handleSendMessage = async (content: string) => {
+    if (!selectedReportId) return;
+    await addMessage({ reportId: selectedReportId, content });
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (!confirm('Are you sure you want to delete this report?')) return;
+    await deleteReport(reportId);
+    handleCloseModal();
+    refetch();
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: 'bg-yellow-100 text-yellow-800',
+    acknowledged: 'bg-blue-100 text-blue-800',
+    task_created: 'bg-purple-100 text-purple-800',
+    rejected: 'bg-red-100 text-red-800',
+    resolved: 'bg-green-100 text-green-800',
   };
 
   return (
@@ -172,26 +220,38 @@ export function OwnerDashboard() {
                   ) : (
                     <ul className="divide-y divide-gray-200">
                       {reports.map((report) => (
-                        <li key={report.id} className="px-4 py-4">
+                        <li 
+                          key={report.id} 
+                          className="px-4 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => handleReportClick(report)}
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">
                                 {report.title}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {report.building?.name} - Unit {report.apartment?.unit_number || 'N/A'}
+                                {report.building?.name || 'Building'} - Unit {report.apartment?.unit_number || 'N/A'}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                Submitted {formatDate(report.created_at)}
                               </p>
                             </div>
-                            <div className="ml-4">
+                            <div className="ml-4 flex items-center gap-2">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                report.status === 'acknowledged' ? 'bg-blue-100 text-blue-800' :
-                                report.status === 'task_created' ? 'bg-purple-100 text-purple-800' :
-                                report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                                'bg-red-100 text-red-800'
+                                statusColors[report.status]
                               }`}>
                                 {report.status.replace('_', ' ')}
                               </span>
+                              <button
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReportClick(report);
+                                }}
+                              >
+                                View Details →
+                              </button>
                             </div>
                           </div>
                         </li>
@@ -226,6 +286,14 @@ export function OwnerDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Report Detail Modal */}
+      <ReportDetailModal
+        report={reportDetail || selectedReport || undefined}
+        messages={reportMessages}
+        isOpen={!!selectedReportId}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }

@@ -1,8 +1,34 @@
+import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
 import { Navbar } from '../components/Navbar';
+import { ReportList } from '../components/reports/ReportList';
+import { TaskList } from '../components/tasks/TaskList';
+import { useUsers, useBuildings, useReports, useTasks } from '../hooks/useQueries';
+
+type Tab = 'overview' | 'reports' | 'tasks' | 'users';
 
 export function ManagerDashboard() {
   const { user, logout } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [showCreateTask, setShowCreateTask] = useState(false);
+
+  // Fetch data for stats
+  const { data: reportsData } = useReports({ status: 'pending' });
+  const { data: tasksData } = useTasks({ status: 'pending' });
+  const { data: usersData } = useUsers();
+
+  const stats = {
+    pendingReports: reportsData?.total || 0,
+    activeTasks: tasksData?.total || 0,
+    totalUsers: usersData?.total || 0,
+  };
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'reports', label: 'Reports' },
+    { id: 'tasks', label: 'Tasks' },
+    { id: 'users', label: 'Users' },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -16,65 +42,164 @@ export function ManagerDashboard() {
           <p className="mt-2 text-gray-600">
             Welcome, {user?.first_name || user?.email}!
           </p>
-          
-          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Quick Stats */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Pending Tasks</dt>
-                      <dd className="text-lg font-medium text-gray-900">0</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">New Reports</dt>
-                      <dd className="text-lg font-medium text-gray-900">0</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Tabs */}
+          <div className="mt-8 border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                    ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }
+                  `}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+          {/* Tab Content */}
+          <div className="mt-6">
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Stats Cards */}
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-500 truncate">Pending Reports</dt>
+                          <dd className="text-lg font-medium text-gray-900">{stats.pendingReports}</dd>
+                        </dl>
+                      </div>
+                    </div>
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                      <dd className="text-lg font-medium text-gray-900">1</dd>
-                    </dl>
+                  <div className="bg-gray-50 px-5 py-3">
+                    <button
+                      onClick={() => setActiveTab('reports')}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                    >
+                      View reports
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-500 truncate">Active Tasks</dt>
+                          <dd className="text-lg font-medium text-gray-900">{stats.activeTasks}</dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 px-5 py-3">
+                    <button
+                      onClick={() => setActiveTab('tasks')}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                    >
+                      View tasks
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
+                          <dd className="text-lg font-medium text-gray-900">{stats.totalUsers}</dd>
+                        </dl>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {activeTab === 'reports' && <ReportList />}
+
+            {activeTab === 'tasks' && (
+              <TaskList onCreateTask={() => setShowCreateTask(true)} />
+            )}
+
+            {activeTab === 'users' && <UsersTab />}
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// Users Tab Component
+function UsersTab() {
+  const { data, isLoading, error } = useUsers();
+  const users = data?.items || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-md bg-red-50 p-4">
+        <h3 className="text-sm font-medium text-red-800">Error loading users</h3>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      <ul className="divide-y divide-gray-200">
+        {users.length === 0 ? (
+          <li className="px-6 py-8 text-center text-gray-500">No users found.</li>
+        ) : (
+          users.map((user) => (
+            <li key={user.id} className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {user.first_name} {user.last_name}
+                  </p>
+                  <p className="text-sm text-gray-500">{user.email}</p>
+                </div>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-blue-100 text-blue-800">
+                  {user.role}
+                </span>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
     </div>
   );
 }

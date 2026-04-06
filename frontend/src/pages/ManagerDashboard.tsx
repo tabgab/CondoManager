@@ -3,7 +3,21 @@ import { useAuthStore } from '../store/auth';
 import { Navbar } from '../components/Navbar';
 import { ReportList } from '../components/reports/ReportList';
 import { TaskList } from '../components/tasks/TaskList';
-import { useUsers, useBuildings, useReports, useTasks } from '../hooks/useQueries';
+import { ManagerTaskDetail } from '../components/tasks/ManagerTaskDetail';
+import { 
+  useUsers, 
+  useBuildings, 
+  useReports, 
+  useTasks,
+  useTaskDetail,
+  useTaskMessages,
+  useReassignTask,
+  useUnassignTask,
+  useVerifyTask,
+  useAddTaskMessage,
+} from '../hooks/useQueries';
+
+import type { Task } from '../types';
 
 type Tab = 'overview' | 'reports' | 'tasks' | 'users';
 
@@ -11,17 +25,60 @@ export function ManagerDashboard() {
   const { user, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showCreateTask, setShowCreateTask] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  // Fetch data for stats
+  // Fetch data for stats and modals
   const { data: reportsData } = useReports({ status: 'pending' });
   const { data: tasksData } = useTasks({ status: 'pending' });
   const { data: usersData } = useUsers();
+  const { data: selectedTask } = useTaskDetail(selectedTaskId);
+  const { data: taskMessages } = useTaskMessages(selectedTaskId);
+  
+  // Task mutations
+  const reassignTask = useReassignTask();
+  const unassignTask = useUnassignTask();
+  const verifyTask = useVerifyTask();
+  const addTaskMessage = useAddTaskMessage();
 
   const stats = {
     pendingReports: reportsData?.total || 0,
     activeTasks: tasksData?.total || 0,
     totalUsers: usersData?.total || 0,
   };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTaskId(task.id);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedTaskId(null);
+  };
+
+  const handleAssign = async (employeeId: string) => {
+    if (selectedTaskId) {
+      await reassignTask.mutateAsync({ taskId: selectedTaskId, assigneeId: employeeId });
+    }
+  };
+
+  const handleUnassign = async () => {
+    if (selectedTaskId) {
+      await unassignTask.mutateAsync({ taskId: selectedTaskId });
+    }
+  };
+
+  const handleVerify = async () => {
+    if (selectedTaskId) {
+      await verifyTask.mutateAsync({ taskId: selectedTaskId });
+    }
+  };
+
+  const handleSendMessage = async (content: string) => {
+    if (selectedTaskId) {
+      await addTaskMessage.mutateAsync({ taskId: selectedTaskId, content });
+    }
+  };
+
+  const employees = usersData?.items.filter(u => u.role === 'employee') || [];
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -142,13 +199,27 @@ export function ManagerDashboard() {
               </div>
             )}
 
-            {activeTab === 'reports' && <ReportList />}
-
             {activeTab === 'tasks' && (
-              <TaskList onCreateTask={() => setShowCreateTask(true)} />
+              <>
+                <TaskList 
+                  onTaskClick={handleTaskClick}
+                  onCreateTask={() => setShowCreateTask(true)} 
+                />
+                <ManagerTaskDetail
+                  task={selectedTask || null}
+                  isOpen={!!selectedTaskId}
+                  onClose={handleCloseDetail}
+                  employees={employees}
+                  messages={taskMessages || []}
+                  onAssign={handleAssign}
+                  onUnassign={handleUnassign}
+                  onVerify={handleVerify}
+                  onSendMessage={handleSendMessage}
+                  isAssigning={reassignTask.isPending}
+                  isVerifying={verifyTask.isPending}
+                />
+              </>
             )}
-
-            {activeTab === 'users' && <UsersTab />}
           </div>
         </div>
       </main>

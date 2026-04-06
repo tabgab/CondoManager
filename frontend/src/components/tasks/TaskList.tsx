@@ -23,12 +23,12 @@ const priorityOptions: { value: TaskPriority | ''; label: string }[] = [
 
 interface TaskListProps {
   onCreateTask?: () => void;
+  onTaskClick?: (task: Task) => void;
 }
 
-export function TaskList({ onCreateTask }: TaskListProps) {
+export function TaskList({ onCreateTask, onTaskClick }: TaskListProps) {
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | ''>('');
   const [selectedPriority, setSelectedPriority] = useState<TaskPriority | ''>('');
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const filters = {
     ...(selectedStatus && { status: selectedStatus }),
@@ -157,67 +157,8 @@ export function TaskList({ onCreateTask }: TaskListProps) {
             <TaskCard
               key={task.id}
               task={task}
-              onClick={setSelectedTask}
+              onClick={() => onTaskClick?.(task)}
             />
           ))}
         </div>
       )}
-
-      {/* Detail Modal */}
-      {selectedTask && (
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-              onClick={() => setSelectedTask(null)}
-            ></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  {selectedTask.title}
-                </h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    {selectedTask.description || 'No description'}
-                  </p>
-                </div>
-                <div className="mt-4 space-y-2 text-sm">
-                  <p>
-                    <span className="font-medium">Status:</span> {selectedTask.status}
-                  </p>
-                  <p>
-                    <span className="font-medium">Priority:</span> {selectedTask.priority}
-                  </p>
-                  {selectedTask.assignee && (
-                    <p>
-                      <span className="font-medium">Assignee:</span>{' '}
-                      {selectedTask.assignee.first_name} {selectedTask.assignee.last_name}
-                    </p>
-                  )}
-                  {selectedTask.due_date && (
-                    <p>
-                      <span className="font-medium">Due:</span>{' '}
-                      {new Date(selectedTask.due_date).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={() => setSelectedTask(null)}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default TaskList;

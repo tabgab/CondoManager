@@ -137,9 +137,99 @@ export function useAddTaskUpdate() {
         is_concern: isConcern,
       })
       return response
-    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId, 'updates'] })
+    },
+  })
+}
+
+// Task detail and messaging hooks
+const TASK_DETAIL_KEY = 'task-detail'
+const TASK_MESSAGES_KEY = 'task-messages'
+
+export function useTaskDetail(id: string | null) {
+  return useQuery<Task | null>({
+    queryKey: [TASK_DETAIL_KEY, id],
+    queryFn: async () => {
+      if (!id) return null
+      const response = await api.get<Task>(`/tasks/${id}`)
+      return response
+    },
+    enabled: !!id,
+  })
+}
+
+export function useTaskMessages(taskId: string | null) {
+  return useQuery<TaskUpdate[]>({
+    queryKey: [TASK_MESSAGES_KEY, taskId],
+    queryFn: async () => {
+      if (!taskId) return []
+      const response = await api.get<TaskUpdate[]>(`/tasks/${taskId}/updates`)
+      return response
+    },
+    enabled: !!taskId,
+  })
+}
+
+export function useReassignTask() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ taskId, assigneeId }: { taskId: string; assigneeId: string }) => {
+      const response = await api.patch<Task>(`/tasks/${taskId}`, { assignee_id: assigneeId })
+      return response
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: [TASK_DETAIL_KEY, variables.taskId] })
+    },
+  })
+}
+
+export function useUnassignTask() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ taskId }: { taskId: string }) => {
+      const response = await api.patch<Task>(`/tasks/${taskId}`, { assignee_id: null })
+      return response
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: [TASK_DETAIL_KEY, variables.taskId] })
+    },
+  })
+}
+
+export function useVerifyTask() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ taskId }: { taskId: string }) => {
+      const response = await api.patch<Task>(`/tasks/${taskId}/status`, { status: 'verified' })
+      return response
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: [TASK_DETAIL_KEY, variables.taskId] })
+    },
+  })
+}
+
+export function useAddTaskMessage() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ taskId, content }: { taskId: string; content: string }) => {
+      const response = await api.post<TaskUpdate>(`/tasks/${taskId}/updates`, {
+        content,
+        is_concern: false,
+      })
+      return response
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [TASK_MESSAGES_KEY, variables.taskId] })
+      queryClient.invalidateQueries({ queryKey: [TASK_DETAIL_KEY, variables.taskId] })
     },
   })
 }

@@ -2,7 +2,9 @@ fastapi==0.115.12
 uvicorn[standard]==0.34.0
 sqlalchemy[asyncio]==2.0.40
 asyncpg==0.30.0
-pydantic==2.11.0
+# Pinned for Render compatibility (avoids Rust compilation)
+pydantic==2.10.6
+pydantic-core==2.27.2
 pydantic-settings==2.13.1
 pytest==8.3.5
 pytest-asyncio==0.25.3

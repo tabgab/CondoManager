@@ -30,35 +30,22 @@ Estimated time: **2-3 hours** for first deployment
 4. Click **"Create new project"**
 5. Wait 1-2 minutes for database to provision
 
-### 1.2 Get Connection String (CRITICAL)
-1. In your project dashboard, click **"Settings"** (left sidebar, gear icon)
-2. Click **"Database"** in the submenu
-3. Scroll down to **"Connection string"** section
-4. Select **"URI"** tab
-5. **Copy the connection string** - it looks like:
+### 1.2 Get Connection String (CRITICAL - Updated Method)
+
+**NEW UI (Current)**: Use the **"Connect"** button at the top right:
+
+1. In your project dashboard, look for the **"Connect"** button (top right corner)
+2. Click **"Connect"**
+3. Look for **"Connection string"** section
+4. Copy the URI format:
    ```
    postgresql://postgres:[YOUR-PASSWORD]@db.xxxxxxxxxxxxxxxxxxxx.supabase.co:5432/postgres
    ```
-6. **Paste this in a secure note** - you'll need it 3 times
+5. **Paste this in a secure note** - you'll need it in Step 3
+
+**Alternative (Old Method)**: Settings → Database → Connection string → URI tab
 
 ### 1.3 Enable Required Extension
-1. In your project dashboard, click **"SQL Editor"** (left sidebar)
-2. Click **"New query"**
-3. Paste this SQL:
-   ```sql
-   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-   ```
-4. Click **"Run"** (or Ctrl+Enter)
-5. Should see: "Success. No rows returned"
-
-### 1.4 Test Connection (Optional but recommended)
-```bash
-# Install psql if needed
-# Test connection:
-psql "postgresql://postgres:[YOUR-PASSWORD]@db.xxxxxxxxxxxxxxxxxxxx.supabase.co:5432/postgres" -c "SELECT 1;"
-# Should return: ?column?  1
-```
-
 ---
 
 ## STEP 2: Prepare Backend Environment Variables

@@ -92,11 +92,16 @@ export interface Report {
   photo_url?: string;
   submitted_by_id?: string;
   submitted_by?: User;
+  reporter?: User;
+  assigned_to?: User;
   building_id?: string;
   building?: Building;
   apartment_id?: string;
   apartment?: Apartment;
   rejection_reason?: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+  resolution_note?: string;
   messages: ReportMessage[];
   created_at: string;
   updated_at: string;
@@ -107,6 +112,7 @@ export interface ReportMessage {
   report_id: string;
   sender_id?: string;
   sender?: User;
+  sender_type?: string;
   content: string;
   created_at: string;
   updated_at: string;

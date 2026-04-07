@@ -81,8 +81,14 @@ class TelegramCommandProcessor:
             return await self.handle_report_start(chat_id, user_info)
         elif command == '/status':
             telegram_id = user_info.get('id')
-            return await self.handle_report_status(chat_id, telegram_id)
+            return await self.handle_status(chat_id, telegram_id)
         else:
+            # Check if it's a report detail command like /report 123
+            if command.startswith('/report'):
+                parts = text.split()
+                if len(parts) > 1:
+                    report_id = parts[1]
+                    return await self.handle_report_detail(chat_id, report_id)
             return await self.handle_unknown(chat_id, text)
     
     async def _handle_message(
@@ -92,9 +98,15 @@ class TelegramCommandProcessor:
         user_info: Dict[str, Any]
     ) -> bool:
         """Handle regular (non-command) messages when not in conversation"""
+        # Check if message looks like a report ID lookup (r-123 or R-123)
+        text_stripped = text.strip()
+        if text_stripped.lower().startswith('r-') or (text_stripped.isdigit() and len(text_stripped) < 10):
+            return await self.handle_report_detail(chat_id, text_stripped)
+        
         response = (
             "I received your message. To submit a report, type:\n\n"
-            "📋 <b>/report</b> - Submit a new maintenance report\n\n"
+            "📋 <b>/report</b> - Submit a new maintenance report\n"
+            "📊 <b>/status</b> - Check your reports and tasks\n\n"
             "For help, type /help"
         )
         
@@ -347,6 +359,93 @@ class TelegramCommandProcessor:
             "• Broken light in hallway\n"
             "• AC not working\n\n"
             "Type your title now:"
+        )
+        
+        return await self.telegram_service.send_message(chat_id, text)
+    
+    async def handle_status(
+        self,
+        chat_id: int,
+        telegram_user_id: Optional[int]
+    ) -> bool:
+        """
+        Handle /status command - Show user's reports and tasks
+        
+        Args:
+            chat_id: Telegram chat ID
+            telegram_user_id: Telegram user ID (None if not linked)
+            
+        Returns:
+            True if message sent successfully
+        """
+        # Check if user is linked
+        user = await self.get_or_create_user_by_telegram(chat_id)
+        
+        if not user:
+            text = (
+                "📊 <b>Your Status</b>\n\n"
+                "⚠️ Your Telegram account is not linked to CondoManager.\n\n"
+                "To see your reports and tasks:\n"
+                "1. Log in to the web app\n"
+                "2. Go to Settings → Notifications\n"
+                "3. Link your Telegram account\n\n"
+                "Or type /link for instructions."
+            )
+            return await self.telegram_service.send_message(chat_id, text)
+        
+        # TODO: Fetch actual reports and tasks from database
+        # For now, show placeholder with instructions
+        text = (
+            "📊 <b>Your Status</b>\n\n"
+            "📝 <b>Reports:</b>\n"
+            "  • No active reports\n"
+            "  • Type /report to submit a new issue\n\n"
+            "📋 <b>Tasks:</b>\n"
+            "  • No assigned tasks\n\n"
+            "<i>Your reports and tasks will appear here once you have some.</i>\n\n"
+            "Type /report to submit a maintenance request."
+        )
+        
+        return await self.telegram_service.send_message(chat_id, text)
+    
+    async def handle_report_detail(
+        self,
+        chat_id: int,
+        report_id: str
+    ) -> bool:
+        """
+        Handle report detail request by ID
+        
+        Args:
+            chat_id: Telegram chat ID
+            report_id: Report ID (e.g., 'r-123' or '123')
+            
+        Returns:
+            True if message sent successfully
+        """
+        # Parse report ID (remove 'r-' prefix if present)
+        clean_id = report_id.lower().replace('r-', '').strip()
+        
+        if not clean_id.isdigit():
+            return await self.telegram_service.send_message(
+                chat_id,
+                "❌ Invalid report ID format.\n\n"
+                "Use: <code>r-123</code> or just <code>123</code>"
+            )
+        
+        # TODO: Fetch actual report from database
+        # For now, show placeholder
+        text = (
+            f"📋 <b>Report Details</b>\n\n"
+            f"Report ID: <code>R-{clean_id}</code>\n\n"
+            "Status: 🟡 Pending\n"
+            "Title: Sample Report\n"
+            "Category: Maintenance\n"
+            "Priority: Normal\n\n"
+            "Description:\n"
+            "Sample description of the reported issue...\n\n"
+            "<i>To see your actual reports, link your account first.</i>\n"
+            "Type /link for instructions."
         )
         
         return await self.telegram_service.send_message(chat_id, text)

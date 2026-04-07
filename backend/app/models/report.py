@@ -1,6 +1,7 @@
 """Report model for condominium issue reporting."""
-from uuid import uuid4
 from sqlalchemy import Column, String, Text, ForeignKey, Enum, JSON
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import text as _sa_text
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base
@@ -37,10 +38,10 @@ class Report(Base):
     """Report model for apartment issues."""
     __tablename__ = "reports"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    reporter_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
-    apartment_id = Column(String(36), ForeignKey("apartments.id"), nullable=True, index=True)
-    building_id = Column(String(36), ForeignKey("buildings.id"), nullable=True, index=True)
+    id = Column(UUID(as_uuid=False), primary_key=True, server_default=_sa_text('gen_random_uuid()'))
+    reporter_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False, index=True)
+    apartment_id = Column(UUID(as_uuid=False), ForeignKey("apartments.id"), nullable=True, index=True)
+    building_id = Column(UUID(as_uuid=False), ForeignKey("buildings.id"), nullable=True, index=True)
     
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
@@ -49,7 +50,7 @@ class Report(Base):
     priority = Column(String(20), nullable=False, default=ReportPriority.MEDIUM)
     
     photo_urls = Column(JSON, default=list)
-    assigned_manager_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    assigned_manager_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
     rejection_reason = Column(Text, nullable=True)
     
     # Relationships

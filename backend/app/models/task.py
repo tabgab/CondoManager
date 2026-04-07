@@ -1,8 +1,9 @@
 """Task model for work assignment and tracking."""
-from uuid import uuid4
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Float
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import text as _sa_text
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base
@@ -29,7 +30,7 @@ class Task(Base):
     """Task model for work assignment to employees."""
     __tablename__ = "tasks"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    id = Column(UUID(as_uuid=False), primary_key=True, server_default=_sa_text('gen_random_uuid()'))
     
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
@@ -37,18 +38,18 @@ class Task(Base):
     status = Column(String(20), nullable=False, default=TaskStatus.PENDING)
     priority = Column(String(20), nullable=False, default=TaskPriority.NORMAL)
     
-    created_by_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
-    assignee_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
+    created_by_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False, index=True)
+    assignee_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True, index=True)
     
-    building_id = Column(String(36), ForeignKey("buildings.id"), nullable=True, index=True)
-    apartment_id = Column(String(36), ForeignKey("apartments.id"), nullable=True, index=True)
-    report_id = Column(String(36), ForeignKey("reports.id"), nullable=True, index=True)
+    building_id = Column(UUID(as_uuid=False), ForeignKey("buildings.id"), nullable=True, index=True)
+    apartment_id = Column(UUID(as_uuid=False), ForeignKey("apartments.id"), nullable=True, index=True)
+    report_id = Column(UUID(as_uuid=False), ForeignKey("reports.id"), nullable=True, index=True)
     
     estimated_hours = Column(Float, nullable=True)
     due_date = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     
-    verified_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    verified_by_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
     rejection_reason = Column(Text, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

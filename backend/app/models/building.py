@@ -1,7 +1,8 @@
 """Building model for condominium management."""
-from uuid import uuid4
 
 from sqlalchemy import Column, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import text as _sa_text
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base
@@ -10,7 +11,7 @@ from app.models.base import Base
 class Building(Base):
     __tablename__ = "buildings"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    id = Column(UUID(as_uuid=False), primary_key=True, server_default=_sa_text('gen_random_uuid()'))
     name = Column(String(200), nullable=False)
     address = Column(String(300), nullable=False)
     city = Column(String(100), nullable=False)

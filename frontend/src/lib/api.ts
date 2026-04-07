@@ -1,7 +1,6 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/auth';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+import { API_BASE_URL, IS_PRODUCTION, DEBUG_MODE } from './config';
 
 // Create axios instance
 const api = axios.create({
@@ -12,6 +11,10 @@ const api = axios.create({
   timeout: 30000,
 });
 
+// Log API base URL in development
+if (!IS_PRODUCTION) {
+  console.log('[API] Base URL:', API_BASE_URL);
+}
 // Request interceptor to attach access token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -32,7 +35,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config;
     
-    // If 401 and we haven't tried refreshing yet
+    // Handle specific error codes
     if (error.response?.status === 401 && originalRequest && !(originalRequest as any)._retry) {
       (originalRequest as any)._retry = true;
       
@@ -62,9 +65,26 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // Refresh failed, logout user
         useAuthStore.getState().logout();
+        if (!IS_PRODUCTION) {
+          console.error('[API] Token refresh failed, redirecting to login');
+        }
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
+    }
+    
+    // Production error logging
+    if (IS_PRODUCTION && error.response && error.response.status >= 500) {
+      console.error('[API] Server Error:', error.response.status, error.message);
+    }
+    
+    // Debug mode logging
+    if (DEBUG_MODE && error.response) {
+      console.error('[API] Request failed:', {
+        url: originalRequest?.url,
+        status: error.response.status,
+        data: error.response.data,
+      });
     }
     
     return Promise.reject(error);

@@ -16,6 +16,12 @@ DATABASE_URL = os.environ.get(
     "postgresql+asyncpg://condomanager:condomanager@localhost:5432/condomanager"
 )
 
+# Supabase and most providers give postgresql:// but async SQLAlchemy needs postgresql+asyncpg://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 IS_SQLITE = "sqlite" in DATABASE_URL.lower()
 
 

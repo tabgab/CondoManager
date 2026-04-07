@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 class ApartmentCreate(BaseModel):
     """Schema for creating an apartment."""
+    building_id: str
     unit_number: str = Field(..., min_length=1, max_length=50)
     floor: Optional[int] = Field(None)
     owner_id: Optional[str] = Field(None)

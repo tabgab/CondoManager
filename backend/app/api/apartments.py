@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.base import get_db
 from app.models.apartment import Apartment
 from app.models.user import User
-from app.schemas.apartment import ApartmentUpdate, ApartmentResponse
+from app.schemas.apartment import ApartmentCreate, ApartmentUpdate, ApartmentResponse, ApartmentListResponse
 from app.crud import apartment as crud_apartment
 from app.crud import user as crud_user
 from app.dependencies.auth import require_manager, get_current_user
@@ -50,6 +50,30 @@ async def check_apartment_modify_access(
 
 
 @router.get("/{apartment_id}", response_model=ApartmentResponse)
+
+@router.get("", response_model=ApartmentListResponse)
+async def list_apartments(
+    building_id: str = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List apartments, optionally filtered by building_id."""
+    if not building_id:
+        return ApartmentListResponse(items=[], total=0, skip=0, limit=100)
+    apartments, total = await crud_apartment.get_apartments_by_building(db, building_id)
+    return ApartmentListResponse(items=apartments, total=total, skip=0, limit=100)
+
+
+@router.post("", response_model=ApartmentResponse, status_code=201)
+async def create_apartment(
+    data: ApartmentCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_manager),
+):
+    """Create a new apartment in a building. Requires manager role."""
+    apartment = await crud_apartment.create_apartment(db, data.building_id, data)
+    return apartment
+
 async def get_apartment(
     apartment_id: str,
     db: AsyncSession = Depends(get_db),

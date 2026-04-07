@@ -9,18 +9,19 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const { user, isAuthenticated, isLoading, _hasHydrated, checkAuth } = useAuthStore();
   const location = useLocation();
 
-  // Check auth on mount if we have a token
+  // Check auth on mount if we have a token but no user
   useEffect(() => {
-    if (isAuthenticated && !user) {
+    if (_hasHydrated && isAuthenticated && !user) {
       checkAuth();
     }
-  }, [isAuthenticated, user, checkAuth]);
+  }, [_hasHydrated, isAuthenticated, user, checkAuth]);
 
-  // Show loading state while checking auth
-  if (isLoading) {
+  // Wait for Zustand to rehydrate from localStorage before making auth decisions
+  // This prevents the flash-redirect caused by initial isAuthenticated=false
+  if (!_hasHydrated || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>

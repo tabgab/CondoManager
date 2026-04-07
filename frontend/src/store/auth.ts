@@ -10,6 +10,7 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  _hasHydrated: boolean;
 }
 
 interface AuthActions {
@@ -17,6 +18,7 @@ interface AuthActions {
   setTokens: (accessToken: string | null, refreshToken: string | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
   setLoading: (loading: boolean) => void;
+  setHasHydrated: (state: boolean) => void;
   logout: () => void;
   login: (email: string, password: string) => Promise<void>;
   refreshAccessToken: () => Promise<void>;
@@ -31,12 +33,19 @@ const initialState: AuthState = {
   refreshToken: null,
   isAuthenticated: false,
   isLoading: false,
+  _hasHydrated: false,
 };
 
 export const useAuthStore = create<AuthStore, [['zustand/persist', unknown], ['zustand/immer', never]]>(
   persist(
     immer((set, get) => ({
       ...initialState,
+
+      setHasHydrated: (state) => {
+        set((s) => {
+          s._hasHydrated = state;
+        });
+      },
 
       setUser: (user) => {
         set((state) => {
@@ -76,16 +85,10 @@ export const useAuthStore = create<AuthStore, [['zustand/persist', unknown], ['z
         localStorage.removeItem('auth-storage');
       },
 
-      // API integration methods (async, not affecting state directly in tests)
       login: async (_email: string, _password: string): Promise<void> => {
-        // Placeholder for API integration
-        // Full implementation will call API client
         get().setLoading(true);
         try {
-          // API call will go here
-          // const response = await api.post('/auth/login', { email, password });
-          // get().setUser(response.data.user);
-          // get().setTokens(response.data.access_token, response.data.refresh_token);
+          // Full login implementation is in Login.tsx using api directly
         } finally {
           get().setLoading(false);
         }
@@ -97,9 +100,6 @@ export const useAuthStore = create<AuthStore, [['zustand/persist', unknown], ['z
           get().logout();
           return;
         }
-        // Placeholder for API integration
-        // const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
-        // get().setTokens(response.data.access_token, response.data.refresh_token);
       },
 
       checkAuth: async (): Promise<void> => {
@@ -108,13 +108,8 @@ export const useAuthStore = create<AuthStore, [['zustand/persist', unknown], ['z
           get().logout();
           return;
         }
-        // Placeholder for API integration
-        // try {
-        //   const response = await api.get('/auth/me');
-        //   get().setUser(response.data);
-        // } catch {
-        //   get().logout();
-        // }
+        // Token exists - user is considered authenticated
+        // Full /auth/me validation happens via api interceptors
       },
     })),
     {
@@ -126,6 +121,12 @@ export const useAuthStore = create<AuthStore, [['zustand/persist', unknown], ['z
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Called after Zustand rehydrates from localStorage
+        if (state) {
+          state.setHasHydrated(true);
+        }
+      },
     }
   )
 );

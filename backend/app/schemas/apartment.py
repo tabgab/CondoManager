@@ -34,6 +34,24 @@ class UserInfo(BaseModel):
         from_attributes = True
 
 
+class ApartmentUserCreate(BaseModel):
+    """Schema for assigning a user to an apartment."""
+    user_id: str
+    role: str = Field(..., pattern='^(owner|tenant)$')  # 'owner' or 'tenant'
+
+
+class ApartmentUserResponse(BaseModel):
+    """Schema for apartment-user association response."""
+    id: str
+    user_id: str
+    role: str
+    user: Optional[UserInfo] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class ApartmentResponse(BaseModel):
     """Schema for apartment response."""
     id: str
@@ -45,6 +63,7 @@ class ApartmentResponse(BaseModel):
     description: Optional[str] = None
     owner: Optional[UserInfo] = None
     tenant: Optional[UserInfo] = None
+    users: list[ApartmentUserResponse] = []
     created_at: datetime
     updated_at: datetime
 

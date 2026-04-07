@@ -1,26 +1,63 @@
 // @ts-nocheck
 import { useState } from 'react';
 import api from '../../lib/api';
-import { useBuildings, useApartments, useCreateBuilding, useCreateApartment, useUpdateApartment, useUsers } from '../../hooks/useQueries';
+import { useBuildings, useApartments, useCreateBuilding, useCreateApartment, useUpdateApartment, useUsers, useAddApartmentUser, useRemoveApartmentUser } from '../../hooks/useQueries';
+
+function ApartmentUserRow({ au, onRemove, removing }: { au: any; onRemove: () => void; removing: boolean }) {
+  const userName = au.user ? `${au.user.first_name} ${au.user.last_name}` : au.user_id;
+  const userEmail = au.user?.email || '';
+  return (
+    <div className="flex items-center justify-between py-1 px-2 bg-gray-50 rounded text-xs">
+      <span className="text-gray-700">
+        {userName} {userEmail && <span className="text-gray-400">({userEmail})</span>}
+      </span>
+      <button onClick={onRemove} disabled={removing}
+        className="text-red-500 hover:text-red-700 disabled:opacity-50 ml-2 text-xs">
+        {removing ? '...' : 'Remove'}
+      </button>
+    </div>
+  );
+}
 
 function ApartmentRow({ apt, users, buildingId }: { apt: any; users: any[]; buildingId: string }) {
-  const [editing, setEditing] = useState(false);
-  const [ownerId, setOwnerId] = useState(apt.owner_id || '');
-  const [tenantId, setTenantId] = useState(apt.tenant_id || '');
+  const [showAssign, setShowAssign] = useState(false);
+  const [assignUserId, setAssignUserId] = useState('');
+  const [assignRole, setAssignRole] = useState('owner');
+  const [assignError, setAssignError] = useState('');
+  const addUser = useAddApartmentUser(apt.id);
+  const removeUser = useRemoveApartmentUser(apt.id);
   const updateApartment = useUpdateApartment();
 
-  const handleSave = async () => {
-    await updateApartment.mutateAsync({
-      apartmentId: apt.id,
-      buildingId,
-      owner_id: ownerId || null,
-      tenant_id: tenantId || null,
-    });
-    setEditing(false);
+  const apartmentUsers = apt.users || [];
+  const owners = apartmentUsers.filter((au: any) => au.role === 'owner');
+  const tenants = apartmentUsers.filter((au: any) => au.role === 'tenant');
+
+  // Fallback to legacy single owner/tenant if no users in association
+  const legacyOwner = users.find((u: any) => u.id === apt.owner_id);
+  const legacyTenant = users.find((u: any) => u.id === apt.tenant_id);
+
+  const handleAssign = async () => {
+    setAssignError('');
+    if (!assignUserId) {
+      setAssignError('Please select a user');
+      return;
+    }
+    try {
+      await addUser.mutateAsync({ user_id: assignUserId, role: assignRole });
+      setAssignUserId('');
+      setShowAssign(false);
+    } catch (err: any) {
+      setAssignError(err?.response?.data?.detail || 'Failed to assign user');
+    }
   };
 
-  const ownerName = users.find(u => u.id === apt.owner_id);
-  const tenantName = users.find(u => u.id === apt.tenant_id);
+  const handleRemove = async (userId: string, role: string) => {
+    try {
+      await removeUser.mutateAsync({ userId, role });
+    } catch (err: any) {
+      console.error('Failed to remove user:', err);
+    }
+  };
 
   return (
     <li className="px-4 py-3 border-b border-gray-100 last:border-0">
@@ -34,42 +71,77 @@ function ApartmentRow({ apt, users, buildingId }: { apt: any; users: any[]; buil
             <span className="ml-2 text-xs text-gray-400">{apt.description}</span>
           )}
         </div>
-        <button onClick={() => setEditing(!editing)}
+        <button onClick={() => setShowAssign(!showAssign)}
           className="text-xs text-blue-600 hover:text-blue-800">
-          {editing ? 'Cancel' : 'Assign Users'}
+          {showAssign ? 'Cancel' : 'Assign User'}
         </button>
       </div>
-      <div className="mt-1 text-xs text-gray-500 space-x-3">
-        <span>Owner: <span className="text-gray-700">{ownerName ? `${ownerName.first_name} ${ownerName.last_name}` : '—'}</span></span>
-        <span>Tenant: <span className="text-gray-700">{tenantName ? `${tenantName.first_name} ${tenantName.last_name}` : '—'}</span></span>
+
+      {/* Owners section */}
+      <div className="mt-2">
+        <span className="text-xs font-semibold text-gray-600">Owners:</span>
+        {owners.length > 0 ? (
+          <div className="mt-1 space-y-1">
+            {owners.map((au: any) => (
+              <ApartmentUserRow key={au.id} au={au}
+                onRemove={() => handleRemove(au.user_id, 'owner')}
+                removing={removeUser.isPending} />
+            ))}
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400 ml-2">
+            {legacyOwner ? `${legacyOwner.first_name} ${legacyOwner.last_name} (legacy)` : '— None —'}
+          </span>
+        )}
       </div>
-      {editing && (
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Owner</label>
-            <select value={ownerId} onChange={e => setOwnerId(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-xs">
-              <option value="">— None —</option>
-              {users.filter(u => u.role === 'owner' || u.role === 'manager').map(u => (
-                <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.email})</option>
-              ))}
-            </select>
+
+      {/* Tenants section */}
+      <div className="mt-2">
+        <span className="text-xs font-semibold text-gray-600">Tenants:</span>
+        {tenants.length > 0 ? (
+          <div className="mt-1 space-y-1">
+            {tenants.map((au: any) => (
+              <ApartmentUserRow key={au.id} au={au}
+                onRemove={() => handleRemove(au.user_id, 'tenant')}
+                removing={removeUser.isPending} />
+            ))}
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Tenant</label>
-            <select value={tenantId} onChange={e => setTenantId(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-xs">
-              <option value="">— None —</option>
-              {users.filter(u => u.role === 'tenant' || u.role === 'owner').map(u => (
-                <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.email})</option>
-              ))}
-            </select>
-          </div>
-          <div className="col-span-2 flex justify-end">
-            <button onClick={handleSave} disabled={updateApartment.isPending}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
-              {updateApartment.isPending ? 'Saving...' : 'Save Assignment'}
-            </button>
+        ) : (
+          <span className="text-xs text-gray-400 ml-2">
+            {legacyTenant ? `${legacyTenant.first_name} ${legacyTenant.last_name} (legacy)` : '— None —'}
+          </span>
+        )}
+      </div>
+
+      {/* Assign user form */}
+      {showAssign && (
+        <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-100">
+          {assignError && <p className="text-xs text-red-600 mb-2">{assignError}</p>}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">User</label>
+              <select value={assignUserId} onChange={e => setAssignUserId(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                <option value="">— Select User —</option>
+                {users.map((u: any) => (
+                  <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.email})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
+              <select value={assignRole} onChange={e => setAssignRole(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                <option value="owner">Owner</option>
+                <option value="tenant">Tenant</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button onClick={handleAssign} disabled={addUser.isPending}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
+                {addUser.isPending ? 'Assigning...' : 'Assign'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -292,8 +364,9 @@ export function BuildingsTab() {
         <strong>How user-building association works:</strong>
         <ul className="mt-1 list-disc list-inside space-y-1 text-xs">
           <li>Each <strong>apartment</strong> belongs to a building</li>
-          <li>Each apartment can have one <strong>Owner</strong> and one <strong>Tenant</strong></li>
+          <li>Each apartment can have <strong>multiple Owners</strong> and <strong>multiple Tenants</strong></li>
           <li>Click ▼ on a building to see its apartments and assign users</li>
+          <li>Use the "Assign User" button to add owners or tenants to an apartment</li>
           <li>Owners and tenants can then submit reports for their apartment</li>
         </ul>
       </div>

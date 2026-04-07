@@ -1,11 +1,14 @@
 """Apartment API endpoints with RBAC."""
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base import get_db
 from app.models.apartment import Apartment
 from app.models.user import User
-from app.schemas.apartment import ApartmentCreate, ApartmentUpdate, ApartmentResponse, ApartmentListResponse
+from app.schemas.apartment import (
+    ApartmentCreate, ApartmentUpdate, ApartmentResponse,
+    ApartmentListResponse, ApartmentUserCreate, ApartmentUserResponse,
+)
 from app.crud import apartment as crud_apartment
 from app.crud import user as crud_user
 from app.dependencies.auth import require_manager, get_current_user
@@ -32,6 +35,10 @@ async def check_apartment_access(
     # Tenants can view their rented apartments
     if current_user.role == "tenant" and apartment.tenant_id == current_user.id:
         return True
+    # Check many-to-many associations
+    for au in (apartment.users or []):
+        if au.user_id == current_user.id:
+            return True
     return False
 
 
@@ -50,6 +57,28 @@ async def check_apartment_modify_access(
 
 
 @router.get("/{apartment_id}", response_model=ApartmentResponse)
+async def get_apartment(
+    apartment_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get an apartment by ID."""
+    apartment = await crud_apartment.get_apartment(db, apartment_id)
+    if not apartment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Apartment not found",
+        )
+    
+    # Check access
+    if not await check_apartment_access(apartment, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view this apartment",
+        )
+    
+    return apartment
+
 
 @router.get("", response_model=ApartmentListResponse)
 async def list_apartments(
@@ -72,28 +101,6 @@ async def create_apartment(
 ):
     """Create a new apartment in a building. Requires manager role."""
     apartment = await crud_apartment.create_apartment(db, data.building_id, data)
-    return apartment
-
-async def get_apartment(
-    apartment_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Get an apartment by ID."""
-    apartment = await crud_apartment.get_apartment(db, apartment_id)
-    if not apartment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Apartment not found",
-        )
-    
-    # Check access
-    if not await check_apartment_access(apartment, current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this apartment",
-        )
-    
     return apartment
 
 
@@ -164,3 +171,78 @@ async def delete_apartment(
     
     await crud_apartment.delete_apartment(db, apartment)
     return None
+
+
+# --- Apartment-User Association Endpoints ---
+
+@router.post("/{apartment_id}/users", response_model=ApartmentUserResponse, status_code=201)
+async def assign_user_to_apartment(
+    apartment_id: str,
+    data: ApartmentUserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_manager),
+):
+    """Assign a user to an apartment with a role (owner/tenant). Requires manager role."""
+    # Verify apartment exists
+    apartment = await crud_apartment.get_apartment(db, apartment_id)
+    if not apartment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Apartment not found",
+        )
+    
+    # Verify user exists
+    user = await crud_user.get_user_by_id(db, data.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    try:
+        apartment_user = await crud_apartment.add_user_to_apartment(
+            db, apartment_id, data.user_id, data.role
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already assigned to this apartment with this role",
+        )
+    
+    return apartment_user
+
+
+@router.delete("/{apartment_id}/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_user_from_apartment(
+    apartment_id: str,
+    user_id: str,
+    role: str = Query(..., description="Role to remove: 'owner' or 'tenant'"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_manager),
+):
+    """Remove a user from an apartment. Requires manager role."""
+    deleted = await crud_apartment.remove_user_from_apartment(db, apartment_id, user_id, role)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+    return None
+
+
+@router.get("/{apartment_id}/users", response_model=list[ApartmentUserResponse])
+async def list_apartment_users(
+    apartment_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all users assigned to an apartment."""
+    apartment = await crud_apartment.get_apartment(db, apartment_id)
+    if not apartment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Apartment not found",
+        )
+    
+    users = await crud_apartment.get_apartment_users(db, apartment_id)
+    return users

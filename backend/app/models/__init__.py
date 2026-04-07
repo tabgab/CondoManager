@@ -3,6 +3,7 @@ from app.models.base import Base, engine, AsyncSessionLocal, get_db
 from app.models.user import User, UserRole
 from app.models.building import Building
 from app.models.apartment import Apartment
+from app.models.apartment_user import ApartmentUser
 from app.models.report import Report
 from app.models.report_message import ReportMessage
 from app.models.task import Task
@@ -20,6 +21,7 @@ __all__ = [
     "UserRole",
     "Building",
     "Apartment",
+    "ApartmentUser",
     "Report",
     "ReportMessage",
     "Task",

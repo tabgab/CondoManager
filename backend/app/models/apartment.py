@@ -28,6 +28,19 @@ class Apartment(Base):
     reports = relationship("Report", back_populates="apartment")
     tasks = relationship("Task", back_populates="apartment")
 
+    # Many-to-many user associations
+    users = relationship("ApartmentUser", back_populates="apartment", lazy="selectin")
+
+    @property
+    def owners(self):
+        """Get all users with 'owner' role for this apartment."""
+        return [au for au in self.users if au.role == 'owner']
+
+    @property
+    def tenants(self):
+        """Get all users with 'tenant' role for this apartment."""
+        return [au for au in self.users if au.role == 'tenant']
+
     def __repr__(self) -> str:
         return f"<Apartment(id={self.id}, unit={self.unit_number}, building={self.building_id})>"
 

@@ -47,6 +47,14 @@ export interface BuildingUpdate {
 }
 
 // Apartment types
+export interface ApartmentUser {
+  id: string;
+  user_id: string;
+  role: string;
+  user?: User;
+  created_at: string;
+}
+
 export interface Apartment {
   id: string;
   building_id: string;
@@ -58,6 +66,7 @@ export interface Apartment {
   building?: Building;
   owner?: User;
   tenant?: User;
+  users?: ApartmentUser[];
   created_at: string;
   updated_at: string;
 }

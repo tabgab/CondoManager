@@ -289,3 +289,31 @@ export function useUpdateApartment() {
     },
   })
 }
+
+// Add user to apartment mutation
+export function useAddApartmentUser(apartmentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { user_id: string; role: string }) => {
+      const response = await api.post<any>(`/apartments/${apartmentId}/users`, data)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apartments'] })
+    },
+  })
+}
+
+// Remove user from apartment mutation
+export function useRemoveApartmentUser(apartmentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      const response = await api.delete(`/apartments/${apartmentId}/users/${userId}?role=${role}`)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apartments'] })
+    },
+  })
+}

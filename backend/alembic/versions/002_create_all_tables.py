@@ -16,9 +16,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add telegram_chat_id to users
-    op.add_column('users', sa.Column('telegram_chat_id', sa.String(), nullable=True))
-
     # Buildings
     op.create_table('buildings',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
@@ -144,4 +141,3 @@ def downgrade() -> None:
     op.drop_table('reports')
     op.drop_table('apartments')
     op.drop_table('buildings')
-    op.drop_column('users', 'telegram_chat_id')

@@ -29,6 +29,7 @@ vi.mock('./store/auth', () => ({
       setUser: vi.fn(),
       setAuthenticated: vi.fn(),
       isLoading: false,
+      _hasHydrated: true,
     }
     return fn ? fn(store) : store
   },

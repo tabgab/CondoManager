@@ -15,10 +15,26 @@ const api = axios.create({
 if (!IS_PRODUCTION) {
   console.log('[API] Base URL:', API_BASE_URL);
 }
+
+// Track whether we are currently refreshing to avoid loops
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Request interceptor to attach access token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('access_token');
+    const token = useAuthStore.getState().accessToken || localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,51 +49,70 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
-    
-    // Handle specific error codes
-    if (error.response?.status === 401 && originalRequest && !(originalRequest as any)._retry) {
-      (originalRequest as any)._retry = true;
-      
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Only attempt refresh for 401 errors, not for other errors
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      // Don't retry login/register/refresh endpoints themselves
+      const url = originalRequest.url || '';
+      if (url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh')) {
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        // Queue this request until refresh is done
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+          }
+          return api(originalRequest);
+        }).catch((err) => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = useAuthStore.getState().refreshToken || localStorage.getItem('refresh_token');
         if (!refreshToken) {
-          throw new Error('No refresh token');
+          throw new Error('No refresh token available');
         }
-        
-        // Try to refresh token
+
         const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
           refresh_token: refreshToken,
         });
-        
-        const { access_token, refresh_token } = response.data;
-        
-        // Update store and localStorage
-        useAuthStore.getState().setTokens(access_token, refresh_token);
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-        
-        // Retry original request with new token
+
+        const { access_token, refresh_token: new_refresh_token } = response.data;
+
+        // Update store
+        useAuthStore.getState().setTokens(access_token, new_refresh_token);
+
+        processQueue(null, access_token);
+
+        // Retry original request
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
         }
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, logout user
-        useAuthStore.getState().logout();
-        if (!IS_PRODUCTION) {
-          console.error('[API] Token refresh failed, redirecting to login');
+        processQueue(refreshError, null);
+        // Only logout if refresh itself explicitly failed with 401
+        // (not network errors or other issues)
+        const refreshErr = refreshError as AxiosError;
+        if (refreshErr.response?.status === 401) {
+          useAuthStore.getState().logout();
+          window.location.href = '/login';
         }
-        window.location.href = '/login';
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
-    
-    // Production error logging
-    if (IS_PRODUCTION && error.response && error.response.status >= 500) {
-      console.error('[API] Server Error:', error.response.status, error.message);
-    }
-    
+
     // Debug mode logging
     if (DEBUG_MODE && error.response) {
       console.error('[API] Request failed:', {
@@ -86,7 +121,7 @@ api.interceptors.response.use(
         data: error.response.data,
       });
     }
-    
+
     return Promise.reject(error);
   }
 );

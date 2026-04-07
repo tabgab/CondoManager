@@ -49,6 +49,7 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://condomanager:condomanager@localhost:5432/condomanager
           SECRET_KEY: test-secret-key-for-ci
+          JWT_SECRET_KEY: test-secret-key-for-ci
 
   frontend-tests:
     runs-on: ubuntu-latest

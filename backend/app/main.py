@@ -16,6 +16,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",  # Vite default
     "https://condomanager.vercel.app",
+    "https://condo-manager-five.vercel.app",
     "https://condomanager-git-*.vercel.app",  # Vercel preview deployments
 ]
 

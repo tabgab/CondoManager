@@ -7,6 +7,7 @@ import { Navbar } from '../components/Navbar';
 import { ReportList } from '../components/reports/ReportList';
 import { TaskList } from '../components/tasks/TaskList';
 import { ManagerTaskDetail } from '../components/tasks/ManagerTaskDetail';
+import { BuildingsTab } from '../components/buildings/BuildingsTab';
 import { 
   useUsers, 
   useBuildings, 
@@ -22,7 +23,7 @@ import {
 
 import type { Task } from '../types';
 
-type Tab = 'overview' | 'reports' | 'tasks' | 'users';
+type Tab = 'overview' | 'reports' | 'tasks' | 'users' | 'buildings';
 
 export function ManagerDashboard() {
   const { user, logout } = useAuthStore();
@@ -88,6 +89,7 @@ export function ManagerDashboard() {
     { id: 'reports', label: 'Reports' },
     { id: 'tasks', label: 'Tasks' },
     { id: 'users', label: 'Users' },
+    { id: 'buildings', label: 'Buildings' },
   ];
 
   return (
@@ -230,6 +232,10 @@ export function ManagerDashboard() {
 
             {activeTab === 'users' && (
               <UsersTabWithAdd />
+            )}
+
+            {activeTab === 'buildings' && (
+              <BuildingsTab />
             )}
           </div>
         </div>

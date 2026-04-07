@@ -234,3 +234,58 @@ export function useAddTaskMessage() {
     },
   })
 }
+
+// Apartments hook for a specific building
+export function useApartments(buildingId: string | null) {
+  return useQuery<any[]>({
+    queryKey: ['apartments', buildingId],
+    queryFn: async () => {
+      if (!buildingId) return []
+      const response = await api.get<{ items: any[] }>(`/apartments?building_id=${buildingId}`)
+      return response.data.items
+    },
+    enabled: !!buildingId,
+  })
+}
+
+// Create building mutation
+export function useCreateBuilding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { name: string; address: string; city: string; postal_code?: string; country?: string; description?: string }) => {
+      const response = await api.post<any>('/buildings', data)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.buildings })
+    },
+  })
+}
+
+// Create apartment mutation
+export function useCreateApartment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { building_id: string; unit_number: string; floor?: number; owner_id?: string; tenant_id?: string; square_meters?: number }) => {
+      const response = await api.post<any>('/apartments', data)
+      return response.data
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['apartments', variables.building_id] })
+    },
+  })
+}
+
+// Update apartment mutation (for assigning owner/tenant)
+export function useUpdateApartment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ apartmentId, buildingId, ...data }: { apartmentId: string; buildingId: string; owner_id?: string | null; tenant_id?: string | null }) => {
+      const response = await api.patch<any>(`/apartments/${apartmentId}`, data)
+      return response.data
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['apartments', variables.buildingId] })
+    },
+  })
+}

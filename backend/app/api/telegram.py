@@ -11,7 +11,7 @@ import logging
 from app.services.telegram import get_telegram_service, TelegramService
 from app.services.telegram_commands import get_command_processor, TelegramCommandProcessor
 from app.dependencies.auth import get_current_user
-from app.schemas.user import User
+from app.schemas.auth import UserResponse as User
 
 # Set up logging
 logger = logging.getLogger(__name__)

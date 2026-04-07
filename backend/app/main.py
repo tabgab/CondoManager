@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import health, auth, users, buildings, apartments, reports, report_messages, tasks, task_updates, recurring_tasks, websocket, push_subscriptions
+from app.api import health, auth, users, buildings, apartments, reports, report_messages, tasks, task_updates, recurring_tasks, websocket, push_subscriptions, telegram
 
 app = FastAPI()
 
@@ -15,3 +15,4 @@ app.include_router(task_updates.router)
 app.include_router(recurring_tasks.router)
 app.include_router(websocket.router)
 app.include_router(push_subscriptions.router)
+app.include_router(telegram.router)

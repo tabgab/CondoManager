@@ -1,4 +1,5 @@
 // @ts-nocheck
+declare const __APP_VERSION__: string;
 import { useState } from 'react';
 import api from '../lib/api';
 import { useAuthStore } from '../store/auth';
@@ -233,6 +234,9 @@ export function ManagerDashboard() {
           </div>
         </div>
       </main>
+      <footer className="text-center py-2 text-xs text-gray-400 bg-gray-50 border-t">
+        CondoManager v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
+      </footer>
     </div>
   );
 }

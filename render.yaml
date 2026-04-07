@@ -1,0 +1,118 @@
+# Render.com Blueprint for CondoManager
+# This file defines the infrastructure as code for Render deployment
+# Learn more: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend Web Service
+  - type: web
+    name: condomanager-backend
+    runtime: python
+    plan: free
+    region: oregon  # Choose region closest to your users
+    
+    # Build configuration
+    buildCommand: |
+      cd backend
+      pip install -r requirements.txt
+    
+    # Start command
+    startCommand: |
+      cd backend
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    
+    # Health check path
+    healthCheckPath: /health
+    
+    # Environment variables
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render dashboard
+      
+      - key: JWT_SECRET_KEY
+        generateValue: true  # Auto-generate if not set
+        
+      - key: JWT_ALGORITHM
+        value: HS256
+        
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+        
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+        
+      - key: ENVIRONMENT
+        value: production
+        
+      - key: LOG_LEVEL
+        value: info
+        
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false  # Set manually
+        
+      - key: VAPID_PUBLIC_KEY
+        sync: false  # Set manually
+        
+      - key: VAPID_PRIVATE_KEY
+        sync: false  # Set manually
+        
+      - key: VAPID_SUBJECT
+        value: mailto:admin@condomanager.app
+        
+      - key: EMAIL_PROVIDER
+        value: sendgrid
+        
+      - key: SENDGRID_API_KEY
+        sync: false  # Set manually if using SendGrid
+        
+      - key: DEFAULT_FROM_EMAIL
+        value: noreply@condomanager.app
+        
+      - key: FRONTEND_URL
+        sync: false  # Set after Vercel deployment
+        
+      - key: CORS_ORIGINS
+        sync: false  # Set after Vercel deployment
+        
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false  # Optional
+        
+      - key: CLOUDINARY_API_KEY
+        sync: false  # Optional
+        
+      - key: CLOUDINARY_API_SECRET
+        sync: false  # Optional
+    
+    # Auto-deploy on push to main
+    autoDeploy: true
+
+# Optional: PostgreSQL Database on Render (alternative to Supabase)
+# Uncomment if you want to use Render's PostgreSQL instead of Supabase
+#
+# databases:
+#   - name: condomanager-db
+#     databaseName: condomanager
+#     user: condomanager
+#     plan: free
+#     region: oregon
+#     ipAllowList:  # Allow connections from anywhere (required for external access)
+#       - source: 0.0.0.0/0
+#         description: everywhere
+
+# Cron Job for recurring tasks (if needed)
+# Uncomment if you want to run scheduled jobs separately from the web service
+#
+#   - type: cron
+#     name: condomanager-scheduler
+#     runtime: python
+#     plan: free
+#     region: oregon
+#     schedule: "0 */6 * * *"  # Every 6 hours
+#     buildCommand: |
+#       cd backend
+#       pip install -r requirements.txt
+#     startCommand: |
+#       cd backend
+#       python -c "import asyncio; from app.services.scheduler import process_due_recurring_tasks; asyncio.run(process_due_recurring_tasks())"

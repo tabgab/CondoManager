@@ -10,7 +10,7 @@ const mockReport: Report = {
   status: 'task_created',
   priority: 'high',
   building_id: 'b1',
-  reporter_id: 'u1',
+  submitted_by_id: 'u1',
   created_at: '2024-01-01T10:00:00Z',
   updated_at: '2024-01-02T14:00:00Z',
 }

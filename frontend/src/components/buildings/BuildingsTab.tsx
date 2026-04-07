@@ -30,8 +30,8 @@ function ApartmentRow({ apt, users, buildingId }: { apt: any; users: any[]; buil
           {apt.floor !== null && apt.floor !== undefined && (
             <span className="ml-2 text-xs text-gray-500">Floor {apt.floor}</span>
           )}
-          {apt.square_meters && (
-            <span className="ml-2 text-xs text-gray-400">{apt.square_meters} m²</span>
+          {apt.description && (
+            <span className="ml-2 text-xs text-gray-400">{apt.description}</span>
           )}
         </div>
         <button onClick={() => setEditing(!editing)}
@@ -80,7 +80,7 @@ function ApartmentRow({ apt, users, buildingId }: { apt: any; users: any[]; buil
 function BuildingCard({ building, users }: { building: any; users: any[] }) {
   const [expanded, setExpanded] = useState(false);
   const [showAddApt, setShowAddApt] = useState(false);
-  const [aptForm, setAptForm] = useState({ unit_number: '', floor: '', square_meters: '' });
+  const [aptForm, setAptForm] = useState({ unit_number: '', floor: '', description: '' });
   const { data: apartments = [], isLoading } = useApartments(expanded ? building.id : null);
   const createApartment = useCreateApartment();
   const [aptError, setAptError] = useState('');
@@ -93,9 +93,9 @@ function BuildingCard({ building, users }: { building: any; users: any[] }) {
         building_id: building.id,
         unit_number: aptForm.unit_number,
         floor: aptForm.floor ? parseInt(aptForm.floor) : undefined,
-        square_meters: aptForm.square_meters ? parseFloat(aptForm.square_meters) : undefined,
+        description: aptForm.description || undefined,
       });
-      setAptForm({ unit_number: '', floor: '', square_meters: '' });
+      setAptForm({ unit_number: '', floor: '', description: '' });
       setShowAddApt(false);
     } catch (err: any) {
       setAptError(err?.response?.data?.detail || 'Failed to add apartment');
@@ -109,7 +109,7 @@ function BuildingCard({ building, users }: { building: any; users: any[] }) {
         <div>
           <h3 className="text-base font-semibold text-gray-900">{building.name}</h3>
           <p className="text-sm text-gray-500">{building.address}, {building.city}</p>
-          {building.postal_code && <p className="text-xs text-gray-400">{building.postal_code} · {building.country}</p>}
+          {building.country && <p className="text-xs text-gray-400">{building.country}</p>}
         </div>
         <span className="text-gray-400 text-lg">{expanded ? '▲' : '▼'}</span>
       </div>
@@ -147,10 +147,10 @@ function BuildingCard({ building, users }: { building: any; users: any[] }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600">Size (m²)</label>
-                  <input type="number" value={aptForm.square_meters}
-                    onChange={e => setAptForm({...aptForm, square_meters: e.target.value})}
-                    placeholder="e.g. 65"
+                  <label className="block text-xs font-medium text-gray-600">Description</label>
+                  <input value={aptForm.description}
+                    onChange={e => setAptForm({...aptForm, description: e.target.value})}
+                    placeholder="e.g. 2-bed flat"
                     className="mt-1 w-full border border-gray-300 rounded px-2 py-1 text-xs"
                   />
                 </div>
@@ -189,7 +189,7 @@ export function BuildingsTab() {
   const [showAdd, setShowAdd] = useState(false);
   const [addError, setAddError] = useState('');
   const [form, setForm] = useState({
-    name: '', address: '', city: '', postal_code: '', country: 'Hungary', description: ''
+    name: '', address: '', city: '', country: '', description: ''
   });
 
   const handleAdd = async (e: any) => {
@@ -197,7 +197,7 @@ export function BuildingsTab() {
     setAddError('');
     try {
       await createBuilding.mutateAsync(form);
-      setForm({ name: '', address: '', city: '', postal_code: '', country: 'Hungary', description: '' });
+      setForm({ name: '', address: '', city: '', country: '', description: '' });
       setShowAdd(false);
     } catch (err: any) {
       setAddError(err?.response?.data?.detail || 'Failed to create building');
@@ -252,12 +252,6 @@ export function BuildingsTab() {
               <label className="block text-sm font-medium text-gray-700">City *</label>
               <input required value={form.city} onChange={e => setForm({...form, city: e.target.value})}
                 placeholder="e.g. Budapest"
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Postal Code</label>
-              <input value={form.postal_code} onChange={e => setForm({...form, postal_code: e.target.value})}
-                placeholder="e.g. 1011"
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
             </div>
             <div>

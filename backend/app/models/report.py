@@ -1,5 +1,6 @@
 """Report model for condominium issue reporting."""
-from sqlalchemy import Column, String, Text, ForeignKey, Enum, JSON
+
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text as _sa_text
 from sqlalchemy.orm import relationship
@@ -7,56 +8,27 @@ from sqlalchemy.orm import relationship
 from app.models.base import Base
 
 
-class ReportCategory(str, Enum):
-    """Report category enum."""
-    MAINTENANCE = "maintenance"
-    CLEANING = "cleaning"
-    SAFETY = "safety"
-    NOISE = "noise"
-    OTHER = "other"
-
-
-class ReportStatus(str, Enum):
-    """Report status enum."""
-    PENDING = "pending"
-    ACKNOWLEDGED = "acknowledged"
-    TASK_CREATED = "task_created"
-    REJECTED = "rejected"
-    RESOLVED = "resolved"
-    DELETED = "deleted"
-
-
-class ReportPriority(str, Enum):
-    """Report priority enum."""
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    URGENT = "urgent"
-
-
 class Report(Base):
     """Report model for apartment issues."""
     __tablename__ = "reports"
 
     id = Column(UUID(as_uuid=False), primary_key=True, server_default=_sa_text('gen_random_uuid()'))
-    reporter_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False, index=True)
-    apartment_id = Column(UUID(as_uuid=False), ForeignKey("apartments.id"), nullable=True, index=True)
-    building_id = Column(UUID(as_uuid=False), ForeignKey("buildings.id"), nullable=True, index=True)
-    
     title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=False)
-    category = Column(String(20), nullable=False, default=ReportCategory.OTHER)
-    status = Column(String(20), nullable=False, default=ReportStatus.PENDING)
-    priority = Column(String(20), nullable=False, default=ReportPriority.MEDIUM)
-    
-    photo_urls = Column(JSON, default=list)
-    assigned_manager_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    description = Column(Text, nullable=True)
+    category = Column(String(100), nullable=True)
+    priority = Column(String(50), nullable=True)
+    status = Column(String(50), nullable=False, server_default='pending')
+    photo_url = Column(String(500), nullable=True)
+    submitted_by_id = Column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    building_id = Column(UUID(as_uuid=False), ForeignKey("buildings.id", ondelete="SET NULL"), nullable=True)
+    apartment_id = Column(UUID(as_uuid=False), ForeignKey("apartments.id", ondelete="SET NULL"), nullable=True)
     rejection_reason = Column(Text, nullable=True)
-    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
     # Relationships
-    reporter = relationship("User", foreign_keys=[reporter_id], back_populates="reports")
-    apartment = relationship("Apartment", back_populates="reports")
+    submitted_by = relationship("User", foreign_keys=[submitted_by_id], back_populates="reports")
     building = relationship("Building", back_populates="reports")
-    assigned_manager = relationship("User", foreign_keys=[assigned_manager_id])
+    apartment = relationship("Apartment", back_populates="reports")
     messages = relationship("ReportMessage", back_populates="report", cascade="all, delete-orphan")
-    tasks = relationship("Task", back_populates="report", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="report")

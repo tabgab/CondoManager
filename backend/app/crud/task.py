@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from app.models.task import Task, TaskStatus
+from app.models.task import Task
 from app.schemas.task import TaskCreate, TaskUpdate
 
 
@@ -22,7 +22,7 @@ async def get_tasks(
 ) -> Tuple[List[Task], int]:
     """Get tasks with optional filtering."""
     query = select(Task)
-    
+
     if status:
         query = query.where(Task.status == status)
     if priority:
@@ -37,17 +37,17 @@ async def get_tasks(
         query = query.where(Task.apartment_id == apartment_id)
     if report_id:
         query = query.where(Task.report_id == report_id)
-    
+
     # Get total count
     count_query = select(func.count(Task.id)).select_from(query.subquery())
     total_result = await db.execute(count_query)
     total = total_result.scalar()
-    
+
     # Get paginated results with relationships loaded
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     items = result.scalars().all()
-    
+
     return list(items), total
 
 
@@ -79,14 +79,14 @@ async def create_task(
         title=task_data.title,
         description=task_data.description,
         priority=task_data.priority,
+        category=task_data.category,
         created_by_id=created_by_id,
         assignee_id=task_data.assignee_id,
         building_id=task_data.building_id,
         apartment_id=task_data.apartment_id,
         report_id=task_data.report_id,
-        estimated_hours=task_data.estimated_hours,
         due_date=task_data.due_date,
-        status=TaskStatus.PENDING,
+        status="pending",
     )
     db.add(db_task)
     await db.commit()
@@ -103,7 +103,7 @@ async def update_task(
     update_dict = update_data.model_dump(exclude_unset=True)
     for field, value in update_dict.items():
         setattr(task, field, value)
-    
+
     await db.commit()
     await db.refresh(task)
     return task
@@ -124,16 +124,10 @@ async def assign_task(
 async def update_task_status(
     db: AsyncSession,
     task: Task,
-    status: TaskStatus
+    status: str
 ) -> Task:
     """Update task status."""
     task.status = status
-    
-    # Auto-set completed_at if status is COMPLETED
-    if status == TaskStatus.COMPLETED:
-        from datetime import datetime
-        task.completed_at = datetime.utcnow()
-    
     await db.commit()
     await db.refresh(task)
     return task
@@ -144,15 +138,14 @@ async def verify_completion(
     task: Task,
     verified_by_id: str,
     approved: bool = True,
-    rejection_reason: Optional[str] = None
+    notes: Optional[str] = None
 ) -> Task:
     """Manager verifies task completion."""
     task.verified_by_id = verified_by_id
-    
+
     if not approved:
-        task.rejection_reason = rejection_reason
-        task.status = TaskStatus.ON_HOLD
-    
+        task.status = "on_hold"
+
     await db.commit()
     await db.refresh(task)
     return task

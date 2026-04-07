@@ -5,7 +5,6 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-
 class TaskStatus(str, Enum):
     """Task status enumeration."""
     PENDING = "pending"
@@ -25,9 +24,9 @@ class TaskPriority(str, Enum):
 
 class TaskBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
-    description: str = Field(..., min_length=1)
-    priority: TaskPriority = TaskPriority.NORMAL
-    estimated_hours: Optional[float] = None
+    description: Optional[str] = None
+    priority: Optional[str] = None
+    category: Optional[str] = None
     due_date: Optional[datetime] = None
     building_id: Optional[str] = None
     apartment_id: Optional[str] = None
@@ -41,23 +40,24 @@ class TaskCreate(TaskBase):
 class TaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
-    priority: Optional[TaskPriority] = None
-    status: Optional[TaskStatus] = None
-    estimated_hours: Optional[float] = None
+    priority: Optional[str] = None
+    category: Optional[str] = None
+    status: Optional[str] = None
+    progress: Optional[int] = Field(None, ge=0, le=100)
     due_date: Optional[datetime] = None
     assignee_id: Optional[str] = None
 
 
 class TaskResponse(TaskBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
-    status: TaskStatus
-    created_by_id: str
+    status: str
+    progress: int = 0
+    created_by_id: Optional[str] = None
     assignee_id: Optional[str] = None
-    completed_at: Optional[datetime] = None
     verified_by_id: Optional[str] = None
-    rejection_reason: Optional[str] = None
+    recurring_task_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -71,15 +71,15 @@ class TaskListResponse(BaseModel):
 
 class TaskStatusUpdate(BaseModel):
     status: TaskStatus
-    percentage_complete: Optional[int] = Field(None, ge=0, le=100)
+    progress: Optional[int] = Field(None, ge=0, le=100)
     notes: Optional[str] = None
 
 
 class TaskCompletion(BaseModel):
-    percentage_complete: int = Field(..., ge=0, le=100)
+    progress: int = Field(..., ge=0, le=100)
     notes: Optional[str] = None
 
 
 class TaskVerification(BaseModel):
     approved: bool = True
-    rejection_reason: Optional[str] = None
+    notes: Optional[str] = None

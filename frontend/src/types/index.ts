@@ -20,29 +20,30 @@ export interface Building {
   id: string;
   name: string;
   address: string;
-  city: string;
-  postal_code: string;
-  country: string;
+  city?: string;
+  country?: string;
   description?: string;
+  manager_id?: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface BuildingCreate {
   name: string;
   address: string;
-  city: string;
-  postal_code: string;
-  country: string;
+  city?: string;
+  country?: string;
   description?: string;
+  manager_id?: string;
 }
 
 export interface BuildingUpdate {
   name?: string;
   address?: string;
   city?: string;
-  postal_code?: string;
   country?: string;
   description?: string;
+  manager_id?: string;
 }
 
 // Apartment types
@@ -51,34 +52,30 @@ export interface Apartment {
   building_id: string;
   unit_number: string;
   floor?: number;
-  size_sqm?: number;
-  bedrooms?: number;
-  bathrooms?: number;
+  owner_id?: string;
+  tenant_id?: string;
+  description?: string;
   building?: Building;
-  owners: User[];
-  tenants: User[];
+  owner?: User;
+  tenant?: User;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ApartmentCreate {
-  building_id: string;
   unit_number: string;
   floor?: number;
-  size_sqm?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  owner_ids?: string[];
-  tenant_ids?: string[];
+  owner_id?: string;
+  tenant_id?: string;
+  description?: string;
 }
 
 export interface ApartmentUpdate {
   unit_number?: string;
   floor?: number;
-  size_sqm?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  owner_ids?: string[];
-  tenant_ids?: string[];
+  owner_id?: string;
+  tenant_id?: string;
+  description?: string;
 }
 
 // Report types
@@ -88,23 +85,18 @@ export type ReportPriority = 'low' | 'normal' | 'high' | 'urgent';
 export interface Report {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   status: ReportStatus;
-  priority: ReportPriority;
-  reporter_id: string;
-  reporter: User;
+  priority?: string;
+  category?: string;
+  photo_url?: string;
+  submitted_by_id?: string;
+  submitted_by?: User;
   building_id?: string;
   building?: Building;
   apartment_id?: string;
   apartment?: Apartment;
-  assigned_manager_id?: string;
-  assigned_manager?: User;
   rejection_reason?: string;
-  category?: string;
-  assigned_to?: User;
-  acknowledged_at?: string;
-  resolved_at?: string;
-  resolution_note?: string;
   messages: ReportMessage[];
   created_at: string;
   updated_at: string;
@@ -113,37 +105,37 @@ export interface Report {
 export interface ReportMessage {
   id: string;
   report_id: string;
-  sender_id: string;
-  sender: User;
+  sender_id?: string;
+  sender?: User;
   content: string;
-  is_internal: boolean;
-  sender_type?: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ReportMessageCreate {
   content: string;
-  is_internal?: boolean;
 }
 
 export interface ReportCreate {
   title: string;
-  description: string;
-  priority?: ReportPriority;
+  description?: string;
+  priority?: string;
+  category?: string;
   building_id?: string;
   apartment_id?: string;
+  photo_url?: string;
 }
 
 export interface ReportFilters {
   status?: ReportStatus;
-  priority?: ReportPriority;
+  priority?: string;
   building_id?: string;
-  reporter_id?: string;
+  submitted_by_id?: string;
   apartment_id?: string;
 }
 
 // Task types
-export type TaskStatus = 'pending' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled' | 'verified';
+export type TaskStatus = 'pending' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export interface Task {
@@ -151,9 +143,11 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
-  priority: TaskPriority;
-  created_by_id: string;
-  created_by: User;
+  priority?: string;
+  category?: string;
+  progress: number;
+  created_by_id?: string;
+  created_by?: User;
   assignee_id?: string;
   assignee?: User;
   building_id?: string;
@@ -162,13 +156,10 @@ export interface Task {
   apartment?: Apartment;
   report_id?: string;
   report?: Report;
-  estimated_hours?: number;
+  recurring_task_id?: string;
   due_date?: string;
-  completed_at?: string;
   verified_by_id?: string;
   verified_by?: User;
-  rejection_reason?: string;
-  progress?: number;
   updates?: TaskUpdate[];
   created_at: string;
   updated_at: string;
@@ -177,31 +168,29 @@ export interface Task {
 export interface TaskUpdate {
   id: string;
   task_id: string;
-  author_id: string;
-  author: User;
+  author_id?: string;
+  author?: User;
   content: string;
-  is_concern: boolean;
-  requires_manager_attention: boolean;
-  percentage_complete?: number;
-  user_type?: string;
+  update_type: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface TaskCreate {
   title: string;
   description?: string;
-  priority?: TaskPriority;
+  priority?: string;
+  category?: string;
   assignee_id?: string;
   building_id?: string;
   apartment_id?: string;
   report_id?: string;
-  estimated_hours?: number;
   due_date?: string;
 }
 
 export interface TaskFilters {
   status?: TaskStatus;
-  priority?: TaskPriority;
+  priority?: string;
   assignee_id?: string;
   building_id?: string;
 }

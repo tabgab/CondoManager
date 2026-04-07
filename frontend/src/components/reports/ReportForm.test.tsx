@@ -17,8 +17,8 @@ vi.mock('../../hooks/useReports', () => ({
 
 describe('ReportForm', () => {
   const mockBuildings = [
-    { id: '1', name: 'Building A', address: '123 Main St', city: 'NYC', postal_code: '10001', country: 'USA', created_at: '2024-01-01' },
-    { id: '2', name: 'Building B', address: '456 Oak Ave', city: 'NYC', postal_code: '10002', country: 'USA', created_at: '2024-01-01' },
+    { id: '1', name: 'Building A', address: '123 Main St', city: 'NYC', country: 'USA', updated_at: '2024-01-01', created_at: '2024-01-01' },
+    { id: '2', name: 'Building B', address: '456 Oak Ave', city: 'NYC', country: 'USA', updated_at: '2024-01-01', created_at: '2024-01-01' },
   ]
 
   const mockApartments = [

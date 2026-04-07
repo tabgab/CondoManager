@@ -42,7 +42,7 @@ export function ReportMessageThread({ report, messages }: ReportMessageThreadPro
       ) : (
         <div className="space-y-4 max-h-80 overflow-y-auto">
           {messages.map((message) => {
-            const isOwnerMessage = message.sender_type === 'owner' || message.sender_id === report.reporter_id;
+            const isOwnerMessage = message.sender_type === 'owner' || message.sender_id === report.submitted_by_id;
             const isManagerMessage = message.sender_type === 'manager';
 
             return (

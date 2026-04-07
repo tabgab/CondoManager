@@ -6,12 +6,12 @@ from pydantic import BaseModel, ConfigDict
 
 class ReportBase(BaseModel):
     title: str
-    description: str
-    category: str = "other"
-    priority: str = "medium"
+    description: Optional[str] = None
+    category: Optional[str] = None
+    priority: Optional[str] = None
     apartment_id: Optional[str] = None
     building_id: Optional[str] = None
-    photo_urls: Optional[List[str]] = None
+    photo_url: Optional[str] = None
 
 
 class ReportCreate(ReportBase):
@@ -23,7 +23,7 @@ class ReportUpdate(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     priority: Optional[str] = None
-    photo_urls: Optional[List[str]] = None
+    photo_url: Optional[str] = None
     status: Optional[str] = None
 
 
@@ -33,11 +33,10 @@ class ReportReject(BaseModel):
 
 class ReportResponse(ReportBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
-    reporter_id: str
+    submitted_by_id: Optional[str] = None
     status: str = "pending"
-    assigned_manager_id: Optional[str] = None
     rejection_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime

@@ -58,7 +58,7 @@ async def create_apartment(
         floor=apartment_data.floor,
         owner_id=apartment_data.owner_id,
         tenant_id=apartment_data.tenant_id,
-        square_meters=apartment_data.square_meters,
+        description=apartment_data.description,
     )
     db.add(db_apartment)
     await db.commit()

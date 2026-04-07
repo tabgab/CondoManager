@@ -27,17 +27,17 @@ async def list_report_messages(
     """List messages in a report thread."""
     # First check if report exists and user has access
     report = await crud.report.get_report(db, report_id)
-    
+
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    
-    # Check access - manager sees all, reporter sees their own
+
+    # Check access - manager sees all, submitter sees their own
     if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
-        if report.reporter_id != current_user.id:
+        if report.submitted_by_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to view this report's messages")
-    
+
     items, total = await crud.report_message.get_messages_by_report(db, report_id, skip, limit)
-    
+
     return ReportMessageListResponse(
         items=[ReportMessageResponse.model_validate(item) for item in items],
         total=total,
@@ -56,18 +56,14 @@ async def create_report_message(
     """Add a message to a report thread."""
     # Check if report exists
     report = await crud.report.get_report(db, report_id)
-    
+
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    
-    # Check access - managers and report reporter can add messages
+
+    # Check access - managers and report submitter can add messages
     if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
-        if report.reporter_id != current_user.id:
+        if report.submitted_by_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to add messages to this report")
-    
-    # Manager can mark messages as internal
-    if message_data.is_internal and current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
-        raise HTTPException(status_code=403, detail="Only managers can create internal messages")
-    
+
     message = await crud.report_message.create_message(db, report_id, message_data, current_user.id)
     return message

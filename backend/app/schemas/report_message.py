@@ -6,17 +6,17 @@ from pydantic import BaseModel, ConfigDict
 
 class ReportMessageCreate(BaseModel):
     content: str
-    photo_urls: Optional[List[str]] = None
-    is_internal: bool = False
 
 
-class ReportMessageResponse(ReportMessageCreate):
+class ReportMessageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     report_id: str
-    author_id: str
+    sender_id: Optional[str] = None
+    content: str
     created_at: datetime
+    updated_at: datetime
 
 
 class ReportMessageListResponse(BaseModel):

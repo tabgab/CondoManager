@@ -6,22 +6,22 @@ from pydantic import BaseModel, Field
 
 class BuildingCreate(BaseModel):
     """Schema for creating a building."""
-    name: str = Field(..., min_length=1, max_length=200)
-    address: str = Field(..., min_length=1, max_length=300)
-    city: str = Field(..., min_length=1, max_length=100)
-    postal_code: Optional[str] = Field(None, max_length=20)
-    country: str = Field(default="Hungary", max_length=100)
+    name: str = Field(..., min_length=1, max_length=255)
+    address: str = Field(..., min_length=1, max_length=500)
+    city: Optional[str] = Field(None, max_length=100)
+    country: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None)
+    manager_id: Optional[str] = Field(None)
 
 
 class BuildingUpdate(BaseModel):
     """Schema for updating a building."""
-    name: Optional[str] = Field(None, min_length=1, max_length=200)
-    address: Optional[str] = Field(None, min_length=1, max_length=300)
-    city: Optional[str] = Field(None, min_length=1, max_length=100)
-    postal_code: Optional[str] = Field(None, max_length=20)
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    address: Optional[str] = Field(None, min_length=1, max_length=500)
+    city: Optional[str] = Field(None, max_length=100)
     country: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None)
+    manager_id: Optional[str] = Field(None)
 
 
 class BuildingResponse(BaseModel):
@@ -29,13 +29,13 @@ class BuildingResponse(BaseModel):
     id: str
     name: str
     address: str
-    city: str
-    postal_code: Optional[str] = None
-    country: str
+    city: Optional[str] = None
+    country: Optional[str] = None
     description: Optional[str] = None
+    manager_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 

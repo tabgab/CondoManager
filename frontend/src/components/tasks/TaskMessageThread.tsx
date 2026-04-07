@@ -55,14 +55,14 @@ export function TaskMessageThread({ updates }: TaskMessageThreadProps) {
           {updates.map((update) => (
             <div
               key={update.id}
-              className={`p-4 rounded-lg ${getMessageStyle(update.user_type, update.is_concern)}`}
+              className={`p-4 rounded-lg ${getMessageStyle(update.user_type, update.update_type === 'concern')}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${getSenderBadgeColor(update.user_type)}`}>
                     {getSenderLabel(update.user_type)}
                   </span>
-                  {update.is_concern && (
+                  {update.update_type === 'concern' && (
                     <span className="text-xs font-medium px-2 py-0.5 rounded bg-red-100 text-red-800">
                       Concern
                     </span>

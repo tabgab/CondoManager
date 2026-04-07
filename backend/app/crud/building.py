@@ -17,13 +17,13 @@ async def get_buildings(
     # Get total count
     count_result = await db.execute(select(func.count()).select_from(Building))
     total = count_result.scalar()
-    
+
     # Get buildings
     result = await db.execute(
         select(Building).offset(skip).limit(limit)
     )
     buildings = result.scalars().all()
-    
+
     return list(buildings), total
 
 
@@ -41,9 +41,9 @@ async def create_building(db: AsyncSession, building_data: BuildingCreate) -> Bu
         name=building_data.name,
         address=building_data.address,
         city=building_data.city,
-        postal_code=building_data.postal_code,
         country=building_data.country,
         description=building_data.description,
+        manager_id=building_data.manager_id,
     )
     db.add(db_building)
     await db.commit()
@@ -58,10 +58,10 @@ async def update_building(
 ) -> Building:
     """Update a building."""
     update_dict = update_data.model_dump(exclude_unset=True)
-    
+
     for field, value in update_dict.items():
         setattr(building, field, value)
-    
+
     await db.commit()
     await db.refresh(building)
     return building

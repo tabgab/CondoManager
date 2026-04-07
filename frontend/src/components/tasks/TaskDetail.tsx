@@ -133,11 +133,11 @@ export function TaskDetail({ task, updates, onClose, onComplete, onAddUpdate, is
             <div className="space-y-3">
               {updates.map((update) => (
                 <div key={update.id} className="flex gap-3">
-                  <div className={`flex-shrink-0 w-2 h-2 mt-2 rounded-full ${update.is_concern ? 'bg-red-500' : 'bg-blue-500'}`} />
+                  <div className={`flex-shrink-0 w-2 h-2 mt-2 rounded-full ${update.update_type === 'concern' ? 'bg-red-500' : 'bg-blue-500'}`} />
                   <div className="flex-1">
                     <p className="text-sm text-gray-700">{update.content}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {new Date(update.created_at).toLocaleString()} {update.is_concern && '• Flagged as concern'}
+                      {new Date(update.created_at).toLocaleString()} {update.update_type === 'concern' && '• Flagged as concern'}
                     </p>
                   </div>
                 </div>

@@ -16,7 +16,7 @@ export function useReports(filters?: ReportFilters) {
       if (filters?.priority) params.append('priority', filters.priority);
       if (filters?.building_id) params.append('building_id', filters.building_id);
       if (filters?.apartment_id) params.append('apartment_id', filters.apartment_id);
-      if (filters?.reporter_id) params.append('reporter_id', filters.reporter_id);
+      if (filters?.submitted_by_id) params.append('submitted_by_id', filters.submitted_by_id);
       
       const queryString = params.toString() ? `?${params.toString()}` : '';
       const response = await get<Report[]>(`/reports${queryString}`);
@@ -30,7 +30,7 @@ export function useMyReports() {
   return useQuery({
     queryKey: [MY_REPORTS_KEY],
     queryFn: async () => {
-      const response = await get<Report[]>('/reports?reporter_id=me');
+      const response = await get<Report[]>('/reports?submitted_by_id=me');
       return response;
     },
     staleTime: 5 * 60 * 1000,

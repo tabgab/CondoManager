@@ -1,7 +1,6 @@
 """CRUD operations for RecurringTask model."""
 from typing import List, Optional
-from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.recurring_task import RecurringTask
@@ -16,8 +15,6 @@ async def get_recurring_tasks(
 ) -> tuple[List[RecurringTask], int]:
     """Get list of recurring tasks with optional filtering."""
     from sqlalchemy.orm import selectinload
-    from app.models.user import User
-    from app.models.building import Building
 
     query = select(RecurringTask).options(
         selectinload(RecurringTask.assignee),
@@ -39,9 +36,10 @@ async def get_recurring_tasks(
 
     return list(items), total
 
+
 async def get_recurring_task(
     db: AsyncSession,
-    recurring_task_id: UUID,
+    recurring_task_id: str,
 ) -> Optional[RecurringTask]:
     """Get a recurring task by ID."""
     result = await db.execute(
@@ -52,13 +50,11 @@ async def get_recurring_task(
 
 async def get_recurring_task_with_relationships(
     db: AsyncSession,
-    recurring_task_id: UUID,
+    recurring_task_id: str,
 ) -> Optional[RecurringTask]:
     """Get recurring task with assignee and building loaded."""
     from sqlalchemy.orm import selectinload
-    from app.models.user import User
-    from app.models.building import Building
-    
+
     result = await db.execute(
         select(RecurringTask)
         .where(RecurringTask.id == str(recurring_task_id))
@@ -74,19 +70,20 @@ async def get_recurring_task_with_relationships(
 async def create_recurring_task(
     db: AsyncSession,
     task_data: RecurringTaskCreate,
-    created_by_id: UUID,
+    created_by_id: str,
 ) -> RecurringTask:
     """Create a new recurring task template."""
     db_task = RecurringTask(
-        template_title=task_data.template_title,
-        template_description=task_data.template_description,
+        title=task_data.title,
+        description=task_data.description,
+        category=task_data.category,
+        priority=task_data.priority,
         frequency=task_data.frequency,
         day_of_week=task_data.day_of_week,
         day_of_month=task_data.day_of_month,
-        hour=task_data.hour,
         is_active=task_data.is_active if task_data.is_active is not None else True,
-        assignee_id=str(task_data.assignee_id) if task_data.assignee_id else None,
-        building_id=str(task_data.building_id) if task_data.building_id else None,
+        assignee_id=task_data.assignee_id,
+        building_id=task_data.building_id,
         created_by_id=str(created_by_id),
     )
     db.add(db_task)
@@ -102,10 +99,10 @@ async def update_recurring_task(
 ) -> RecurringTask:
     """Update a recurring task template."""
     update_data = task_update.model_dump(exclude_unset=True)
-    
+
     for field, value in update_data.items():
         setattr(recurring_task, field, value)
-    
+
     await db.commit()
     await db.refresh(recurring_task)
     return recurring_task
@@ -130,7 +127,3 @@ async def toggle_active(
     await db.commit()
     await db.refresh(recurring_task)
     return recurring_task
-
-
-# Import func here to avoid circular import issues
-from sqlalchemy import func

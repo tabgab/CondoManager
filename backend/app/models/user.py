@@ -93,12 +93,7 @@ class User(Base):
         nullable=False
     )
 
-    # Relationships with apartments (many-to-many via apartment_users table)
-    apartments: Mapped[list["Apartment"]] = relationship(
-        "Apartment",
-        secondary="apartment_users",
-        back_populates="residents"
-    )
+    # Relationships with apartments
     owned_apartments: Mapped[list["Apartment"]] = relationship(
         "Apartment",
         foreign_keys="Apartment.owner_id",
@@ -113,12 +108,12 @@ class User(Base):
     # Relationships with reports
     reports: Mapped[list["Report"]] = relationship(
         "Report",
-        foreign_keys="Report.reporter_id",
-        back_populates="reporter"
+        foreign_keys="Report.submitted_by_id",
+        back_populates="submitted_by"
     )
     report_messages: Mapped[list["ReportMessage"]] = relationship(
         "ReportMessage",
-        back_populates="author"
+        back_populates="sender"
     )
 
     # Relationships with tasks

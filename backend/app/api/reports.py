@@ -37,11 +37,11 @@ async def list_reports(
     """List reports - manager sees all, owner/tenant sees only their own."""
     # Manager can see all reports
     if current_user.role in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
-        reporter_id = None
+        submitted_by_id = None
     else:
         # Owner/tenant only see their own reports
-        reporter_id = current_user.id
-    
+        submitted_by_id = current_user.id
+
     items, total = await crud.report.get_reports(
         db,
         skip=skip,
@@ -49,7 +49,7 @@ async def list_reports(
         status=status,
         priority=priority,
         category=category,
-        reporter_id=reporter_id,
+        submitted_by_id=submitted_by_id,
     )
     
     return ReportListResponse(
@@ -85,7 +85,7 @@ async def get_report(
     
     # Check access permissions
     if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
-        if report.reporter_id != current_user.id:
+        if report.submitted_by_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to view this report")
     
     return report
@@ -154,7 +154,7 @@ async def delete_report(
     
     # Check permissions
     if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
-        if report.reporter_id != current_user.id:
+        if report.submitted_by_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this report")
     
     await crud.report.delete_report(db, report)

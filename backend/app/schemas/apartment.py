@@ -7,19 +7,19 @@ from pydantic import BaseModel, Field
 class ApartmentCreate(BaseModel):
     """Schema for creating an apartment."""
     unit_number: str = Field(..., min_length=1, max_length=50)
-    floor: Optional[int] = Field(None, ge=0)
+    floor: Optional[int] = Field(None)
     owner_id: Optional[str] = Field(None)
     tenant_id: Optional[str] = Field(None)
-    square_meters: Optional[float] = Field(None, gt=0)
+    description: Optional[str] = Field(None)
 
 
 class ApartmentUpdate(BaseModel):
     """Schema for updating an apartment."""
     unit_number: Optional[str] = Field(None, min_length=1, max_length=50)
-    floor: Optional[int] = Field(None, ge=0)
+    floor: Optional[int] = Field(None)
     owner_id: Optional[str] = Field(None)
     tenant_id: Optional[str] = Field(None)
-    square_meters: Optional[float] = Field(None, gt=0)
+    description: Optional[str] = Field(None)
 
 
 class UserInfo(BaseModel):
@@ -28,7 +28,7 @@ class UserInfo(BaseModel):
     email: str
     first_name: str
     last_name: str
-    
+
     class Config:
         from_attributes = True
 
@@ -41,12 +41,12 @@ class ApartmentResponse(BaseModel):
     floor: Optional[int] = None
     owner_id: Optional[str] = None
     tenant_id: Optional[str] = None
-    square_meters: Optional[float] = None
+    description: Optional[str] = None
     owner: Optional[UserInfo] = None
     tenant: Optional[UserInfo] = None
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 

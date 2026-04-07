@@ -19,7 +19,7 @@ async def get_task_updates(
     count_query = select(func.count(TaskUpdate.id)).where(TaskUpdate.task_id == task_id)
     total_result = await db.execute(count_query)
     total = total_result.scalar()
-    
+
     # Get paginated results with author loaded
     query = (
         select(TaskUpdate)
@@ -31,7 +31,7 @@ async def get_task_updates(
     )
     result = await db.execute(query)
     items = result.scalars().all()
-    
+
     return list(items), total
 
 
@@ -46,9 +46,7 @@ async def create_task_update(
         task_id=task_id,
         author_id=author_id,
         content=update_data.content,
-        is_concern=update_data.is_concern,
-        requires_manager_attention=update_data.requires_manager_attention,
-        percentage_complete=update_data.percentage_complete,
+        update_type=update_data.update_type,
     )
     db.add(db_update)
     await db.commit()

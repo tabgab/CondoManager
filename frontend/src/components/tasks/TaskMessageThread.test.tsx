@@ -10,7 +10,7 @@ const mockUpdates: TaskUpdate[] = [
     user_id: 'emp1',
     user_type: 'employee',
     content: 'Started working on the leak',
-    is_concern: false,
+    update_type: 'comment',
     created_at: '2024-01-02T10:00:00Z',
   },
   {
@@ -19,7 +19,7 @@ const mockUpdates: TaskUpdate[] = [
     user_id: 'mgr1',
     user_type: 'manager',
     content: 'Need more time to complete',
-    is_concern: true,
+    update_type: 'concern',
     created_at: '2024-01-03T14:00:00Z',
   },
 ]
@@ -71,7 +71,7 @@ describe('TaskMessageThread', () => {
       user_id: 'system',
       user_type: 'system',
       content: 'Task status changed to completed',
-      is_concern: false,
+      update_type: 'comment',
       created_at: '2024-01-04T09:00:00Z',
     }
     render(<TaskMessageThread updates={[...mockUpdates, systemUpdate]} />)

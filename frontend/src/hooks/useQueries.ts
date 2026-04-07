@@ -41,7 +41,7 @@ export function useReports(filters?: ReportFilters) {
       if (filters?.status) params.append('status', filters.status)
       if (filters?.priority) params.append('priority', filters.priority)
       if (filters?.building_id) params.append('building_id', filters.building_id)
-      if (filters?.reporter_id) params.append('reporter_id', filters.reporter_id)
+      if (filters?.submitted_by_id) params.append('submitted_by_id', filters.submitted_by_id)
       
       const queryString = params.toString()
       const response = await api.get<PaginatedResponse<Report>>(`/reports?${queryString}`)
@@ -134,7 +134,7 @@ export function useAddTaskUpdate() {
     mutationFn: async ({ taskId, content, isConcern }: { taskId: string; content: string; isConcern: boolean }) => {
       const response = await api.post<TaskUpdate>(`/tasks/${taskId}/updates`, {
         content,
-        is_concern: isConcern,
+        update_type: isConcern ? 'concern' : 'comment',
       })
       return response.data
     },
@@ -224,7 +224,7 @@ export function useAddTaskMessage() {
     mutationFn: async ({ taskId, content }: { taskId: string; content: string }) => {
       const response = await api.post<TaskUpdate>(`/tasks/${taskId}/updates`, {
         content,
-        is_concern: false,
+        update_type: 'comment',
       })
       return response.data
     },
@@ -252,7 +252,7 @@ export function useApartments(buildingId: string | null) {
 export function useCreateBuilding() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: { name: string; address: string; city: string; postal_code?: string; country?: string; description?: string }) => {
+    mutationFn: async (data: { name: string; address: string; city: string; manager_id?: string; country?: string; description?: string }) => {
       const response = await api.post<any>('/buildings', data)
       return response.data
     },
@@ -266,7 +266,7 @@ export function useCreateBuilding() {
 export function useCreateApartment() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: { building_id: string; unit_number: string; floor?: number; owner_id?: string; tenant_id?: string; square_meters?: number }) => {
+    mutationFn: async (data: { building_id: string; unit_number: string; floor?: number; owner_id?: string; tenant_id?: string; description?: string }) => {
       const response = await api.post<any>('/apartments', data)
       return response.data
     },

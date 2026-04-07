@@ -25,7 +25,7 @@ const mockUpdates: TaskUpdate[] = [
     task_id: '1',
     author_id: 'emp1',
     content: 'Started work on the leak',
-    is_concern: false,
+    update_type: 'comment',
     created_at: '2024-01-10T00:00:00Z',
   },
 ]

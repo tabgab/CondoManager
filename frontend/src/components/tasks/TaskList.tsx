@@ -162,3 +162,6 @@ export function TaskList({ onCreateTask, onTaskClick }: TaskListProps) {
           ))}
         </div>
       )}
+    </div>
+  );
+}

@@ -137,6 +137,7 @@ export function useAddTaskUpdate() {
         is_concern: isConcern,
       })
       return response
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId, 'updates'] })
     },

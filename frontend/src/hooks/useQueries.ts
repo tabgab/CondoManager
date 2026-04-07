@@ -24,7 +24,7 @@ export function useBuildings() {
     queryKey: queryKeys.buildings,
     queryFn: async () => {
       const response = await api.get<{ items: Building[] }>('/buildings')
-      return response.items
+      return response.data.items
     },
   })
 }
@@ -45,7 +45,7 @@ export function useReports(filters?: ReportFilters) {
       
       const queryString = params.toString()
       const response = await api.get<PaginatedResponse<Report>>(`/reports?${queryString}`)
-      return response
+      return response.data
     },
   })
 }
@@ -66,7 +66,7 @@ export function useTasks(filters?: TaskFilters) {
       
       const queryString = params.toString()
       const response = await api.get<PaginatedResponse<Task>>(`/tasks?${queryString}`)
-      return response
+      return response.data
     },
   })
 }
@@ -77,7 +77,7 @@ export function useUsers() {
     queryKey: queryKeys.users,
     queryFn: async () => {
       const response = await api.get<PaginatedResponse<User>>('/users')
-      return response
+      return response.data
     },
   })
 }
@@ -108,7 +108,7 @@ export function useMyAssignedTasks() {
     queryKey: ['tasks', 'my-assigned'],
     queryFn: async () => {
       const response = await api.get<PaginatedResponse<Task>>('/tasks?assignee_id=me')
-      return response
+      return response.data
     },
   })
 }
@@ -119,7 +119,7 @@ export function useUpdateTaskStatus() {
   return useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
       const response = await api.patch<Task>(`/tasks/${taskId}/status`, { status })
-      return response
+      return response.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -136,7 +136,7 @@ export function useAddTaskUpdate() {
         content,
         is_concern: isConcern,
       })
-      return response
+      return response.data
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId, 'updates'] })
@@ -154,7 +154,7 @@ export function useTaskDetail(id: string | null) {
     queryFn: async () => {
       if (!id) return null
       const response = await api.get<Task>(`/tasks/${id}`)
-      return response
+      return response.data
     },
     enabled: !!id,
   })
@@ -166,7 +166,7 @@ export function useTaskMessages(taskId: string | null) {
     queryFn: async () => {
       if (!taskId) return []
       const response = await api.get<TaskUpdate[]>(`/tasks/${taskId}/updates`)
-      return response
+      return response.data
     },
     enabled: !!taskId,
   })
@@ -178,7 +178,7 @@ export function useReassignTask() {
   return useMutation({
     mutationFn: async ({ taskId, assigneeId }: { taskId: string; assigneeId: string }) => {
       const response = await api.patch<Task>(`/tasks/${taskId}`, { assignee_id: assigneeId })
-      return response
+      return response.data
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -193,7 +193,7 @@ export function useUnassignTask() {
   return useMutation({
     mutationFn: async ({ taskId }: { taskId: string }) => {
       const response = await api.patch<Task>(`/tasks/${taskId}`, { assignee_id: null })
-      return response
+      return response.data
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -208,7 +208,7 @@ export function useVerifyTask() {
   return useMutation({
     mutationFn: async ({ taskId }: { taskId: string }) => {
       const response = await api.patch<Task>(`/tasks/${taskId}/status`, { status: 'verified' })
-      return response
+      return response.data
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -226,7 +226,7 @@ export function useAddTaskMessage() {
         content,
         is_concern: false,
       })
-      return response
+      return response.data
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [TASK_MESSAGES_KEY, variables.taskId] })

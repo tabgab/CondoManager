@@ -9,6 +9,9 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   phone?: string;
+  telegram_chat_id?: string;
+  owned_apartments?: Apartment[];
+  rented_apartments?: Apartment[];
   created_at: string;
 }
 
@@ -97,6 +100,11 @@ export interface Report {
   assigned_manager_id?: string;
   assigned_manager?: User;
   rejection_reason?: string;
+  category?: string;
+  assigned_to?: User;
+  acknowledged_at?: string;
+  resolved_at?: string;
+  resolution_note?: string;
   messages: ReportMessage[];
   created_at: string;
   updated_at: string;
@@ -109,7 +117,13 @@ export interface ReportMessage {
   sender: User;
   content: string;
   is_internal: boolean;
+  sender_type?: string;
   created_at: string;
+}
+
+export interface ReportMessageCreate {
+  content: string;
+  is_internal?: boolean;
 }
 
 export interface ReportCreate {
@@ -125,6 +139,7 @@ export interface ReportFilters {
   priority?: ReportPriority;
   building_id?: string;
   reporter_id?: string;
+  apartment_id?: string;
 }
 
 // Task types
@@ -153,6 +168,8 @@ export interface Task {
   verified_by_id?: string;
   verified_by?: User;
   rejection_reason?: string;
+  progress?: number;
+  updates?: TaskUpdate[];
   created_at: string;
   updated_at: string;
 }
@@ -166,6 +183,7 @@ export interface TaskUpdate {
   is_concern: boolean;
   requires_manager_attention: boolean;
   percentage_complete?: number;
+  user_type?: string;
   created_at: string;
 }
 

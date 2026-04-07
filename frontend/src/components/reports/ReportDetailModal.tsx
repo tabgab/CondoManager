@@ -94,7 +94,7 @@ export function ReportDetailModal({ report, messages = [], isOpen, onClose }: Re
                 )}
                 {report.assigned_to && (
                   <div>
-                    <span className="font-medium">Assigned to:</span> {report.assigned_to}
+                    <span className="font-medium">Assigned to:</span> {`${report.assigned_to.first_name} ${report.assigned_to.last_name}`}
                   </div>
                 )}
               </div>

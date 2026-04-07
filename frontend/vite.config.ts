@@ -62,7 +62,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-select'],
+          // 'ui-vendor': removed - not installed
           'query-vendor': ['@tanstack/react-query'],
         },
       },

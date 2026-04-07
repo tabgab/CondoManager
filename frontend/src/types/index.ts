@@ -141,7 +141,7 @@ export interface ReportFilters {
 }
 
 // Task types
-export type TaskStatus = 'pending' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
+export type TaskStatus = 'pending' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled' | 'verified';
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export interface Task {
@@ -164,6 +164,7 @@ export interface Task {
   report?: Report;
   recurring_task_id?: string;
   due_date?: string;
+  estimated_hours?: number;
   verified_by_id?: string;
   verified_by?: User;
   updates?: TaskUpdate[];
@@ -178,6 +179,7 @@ export interface TaskUpdate {
   author?: User;
   content: string;
   update_type: string;
+  user_type?: string;
   created_at: string;
   updated_at: string;
 }

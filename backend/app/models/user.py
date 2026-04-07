@@ -1,10 +1,9 @@
 """User model with role-based access control."""
-import os
-import uuid
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import String, Boolean, DateTime, BigInteger, func
+from sqlalchemy import String, Boolean, DateTime, func, text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -26,82 +25,74 @@ class UserRole(str, Enum):
 
 class User(Base):
     """User model for all roles in the condominium management system."""
-    
+
     __tablename__ = "users"
-    
+
+    # UUID primary key - matches migration 001 (postgresql.UUID)
     id: Mapped[str] = mapped_column(
-        String(36),
+        UUID(as_uuid=False),
         primary_key=True,
-        default=lambda: str(uuid.uuid4())
+        server_default=text("gen_random_uuid()")
     )
-    
+
     email: Mapped[str] = mapped_column(
         String(255),
         unique=True,
         nullable=False
     )
-    
+
     hashed_password: Mapped[str] = mapped_column(
         String(255),
         nullable=False
     )
-    
+
     first_name: Mapped[str] = mapped_column(
         String(100),
         nullable=False
     )
-    
+
     last_name: Mapped[str] = mapped_column(
         String(100),
         nullable=False
     )
-    
+
     phone: Mapped[str] = mapped_column(
         String(20),
         nullable=True
     )
-    
+
     role: Mapped[str] = mapped_column(
         String(20),
         default=UserRole.TENANT,
         nullable=False
     )
-    
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
         nullable=False
     )
-    
-    email_verified: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        nullable=False
-    )
-    
-    telegram_chat_id: Mapped[int] = mapped_column(
-        BigInteger,
+
+    # telegram_chat_id stored as String to match migration 001
+    telegram_chat_id: Mapped[str] = mapped_column(
+        String(),
         nullable=True,
         unique=True
     )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
-    
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False
     )
-    
-    deleted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
-    )
-    
+
     # Relationships with apartments (many-to-many via apartment_users table)
     apartments: Mapped[list["Apartment"]] = relationship(
         "Apartment",
@@ -118,7 +109,7 @@ class User(Base):
         foreign_keys="Apartment.tenant_id",
         back_populates="tenant"
     )
-    
+
     # Relationships with reports
     reports: Mapped[list["Report"]] = relationship(
         "Report",
@@ -129,7 +120,7 @@ class User(Base):
         "ReportMessage",
         back_populates="author"
     )
-    
+
     # Relationships with tasks
     tasks_created: Mapped[list["Task"]] = relationship(
         "Task",
@@ -154,7 +145,7 @@ class User(Base):
         "TaskAttachment",
         back_populates="uploaded_by"
     )
-    
+
     # Relationships with recurring tasks
     recurring_tasks_assigned: Mapped[list["RecurringTask"]] = relationship(
         "RecurringTask",
@@ -166,20 +157,20 @@ class User(Base):
         foreign_keys="RecurringTask.created_by_id",
         back_populates="created_by"
     )
-    
+
     # Relationships with push subscriptions
     push_subscriptions: Mapped[list["PushSubscription"]] = relationship(
         "PushSubscription",
         back_populates="user",
         cascade="all, delete-orphan"
     )
-    
+
     def __repr__(self) -> str:
         return (
             f"<User(id={self.id}, email={self.email}, "
             f"role={self.role}, is_active={self.is_active})>"
         )
-    
+
     @property
     def full_name(self) -> str:
         """Return user's full name."""

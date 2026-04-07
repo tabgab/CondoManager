@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState } from 'react';
+import api from '../lib/api';
 import { useAuthStore } from '../store/auth';
 import { Navbar } from '../components/Navbar';
 import { ReportList } from '../components/reports/ReportList';
@@ -221,6 +222,14 @@ export function ManagerDashboard() {
                 />
               </>
             )}
+
+            {activeTab === 'reports' && (
+              <ReportList />
+            )}
+
+            {activeTab === 'users' && (
+              <UsersTabWithAdd />
+            )}
           </div>
         </div>
       </main>
@@ -229,9 +238,37 @@ export function ManagerDashboard() {
 }
 
 // Users Tab Component
-function UsersTab() {
-  const { data, isLoading, error } = useUsers();
+// Users Tab with Add User functionality
+function UsersTabWithAdd() {
+  const { data, isLoading, error, refetch } = useUsers();
   const users = data?.items || [];
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    role: 'employee' as string,
+    phone: '',
+  });
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdding(true);
+    setAddError(null);
+    try {
+      await api.post('/auth/register', form);
+      setShowAddUser(false);
+      setForm({ first_name: '', last_name: '', email: '', password: '', role: 'employee', phone: '' });
+      refetch();
+    } catch (err: any) {
+      setAddError(err?.response?.data?.detail || 'Failed to add user');
+    } finally {
+      setAdding(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -250,28 +287,124 @@ function UsersTab() {
   }
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-md">
-      <ul className="divide-y divide-gray-200">
-        {users.length === 0 ? (
-          <li className="px-6 py-8 text-center text-gray-500">No users found.</li>
-        ) : (
-          users.map((user) => (
-            <li key={user.id} className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {user.first_name} {user.last_name}
-                  </p>
-                  <p className="text-sm text-gray-500">{user.email}</p>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium text-gray-900">Users ({users.length})</h3>
+        <button
+          onClick={() => setShowAddUser(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+        >
+          + Add User
+        </button>
+      </div>
+
+      {showAddUser && (
+        <div className="mb-6 bg-white shadow rounded-lg p-6">
+          <h4 className="text-md font-medium text-gray-900 mb-4">Add New User</h4>
+          {addError && (
+            <div className="mb-4 rounded-md bg-red-50 p-3">
+              <p className="text-sm text-red-700">{addError}</p>
+            </div>
+          )}
+          <form onSubmit={handleAdd} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">First Name</label>
+              <input type="text" required value={form.first_name}
+                onChange={e => setForm({...form, first_name: e.target.value})}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Last Name</label>
+              <input type="text" required value={form.last_name}
+                onChange={e => setForm({...form, last_name: e.target.value})}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input type="email" required value={form.email}
+                onChange={e => setForm({...form, email: e.target.value})}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input type="password" required minLength={8} value={form.password}
+                onChange={e => setForm({...form, password: e.target.value})}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Role</label>
+              <select value={form.role} onChange={e => setForm({...form, role: e.target.value})}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="employee">Employee</option>
+                <option value="owner">Owner</option>
+                <option value="tenant">Tenant</option>
+                <option value="manager">Manager</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Phone (optional)</label>
+              <input type="tel" value={form.phone}
+                onChange={e => setForm({...form, phone: e.target.value})}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="sm:col-span-2 flex justify-end space-x-3">
+              <button type="button" onClick={() => setShowAddUser(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button type="submit" disabled={adding}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              >
+                {adding ? 'Adding...' : 'Add User'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200">
+          {users.length === 0 ? (
+            <li className="px-6 py-8 text-center text-gray-500">No users found. Add one above.</li>
+          ) : (
+            users.map((user) => (
+              <li key={user.id} className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.first_name} {user.last_name}
+                    </p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                    {user.phone && <p className="text-xs text-gray-400">{user.phone}</p>}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                      user.role === 'manager' ? 'bg-purple-100 text-purple-800' :
+                      user.role === 'employee' ? 'bg-green-100 text-green-800' :
+                      user.role === 'owner' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.role}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${
+                      user.is_active ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                    }`}>
+                      {user.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
                 </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-blue-100 text-blue-800">
-                  {user.role}
-                </span>
-              </div>
-            </li>
-          ))
-        )}
-      </ul>
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
     </div>
   );
 }

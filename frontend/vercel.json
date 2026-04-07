@@ -28,10 +28,6 @@
       "dest": "/index.html"
     }
   ],
-  "env": {
-    "VITE_API_URL": "@condomanager_api_url",
-    "VITE_WS_URL": "@condomanager_ws_url"
-  },
   "headers": [
     {
       "source": "/(.*)",
